@@ -33,16 +33,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
       icon: <LayoutDashboard size={20} />
     },
     {
-      path: '/regulatory-due-diligence',
-      label: 'Regulatory Due Diligence',
-      icon: <FileCheck size={20} />
-    },
-    {
-      path: '/classification-rules',
-      label: 'Classification Rules',
-      icon: <Shield size={20} />
-    },
-    {
       path: '/clients',
       label: 'Clients',
       icon: <Users size={20} />
@@ -91,14 +81,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
             margin: 0,
             color: '#f9fafb'
           }}>
-            FM Lifecycle
+            FM Client Portal
           </h1>
           <p style={{
             fontSize: '12px',
             color: '#9ca3af',
             margin: '4px 0 0 0'
           }}>
-            Client Orchestrator
+            Readiness & Onboarding
           </p>
         </div>
 

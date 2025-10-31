@@ -144,72 +144,192 @@ export default function Dashboard() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6' }}>
       {/* Header */}
-      <header style={{ borderBottom: '1px solid #e5e7eb', backgroundColor: 'white', padding: '20px 40px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111827', margin: 0 }}>
-          Client Onboarding Dashboard
-        </h1>
-        <p style={{ color: '#6b7280', fontSize: '14px', marginTop: '4px' }}>
-          Monitor client onboarding progress and stages
-        </p>
+      <header style={{ borderBottom: '1px solid #e5e7eb', backgroundColor: 'white', padding: '24px 40px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#111827', margin: 0 }}>
+              Client Readiness Dashboard
+            </h1>
+            <p style={{ color: '#6b7280', fontSize: '14px', marginTop: '8px' }}>
+              Monitor client onboarding and regulatory due diligence progress
+            </p>
+          </div>
+          <div style={{ fontSize: '13px', color: '#6b7280' }}>
+            Last updated: {new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          </div>
+        </div>
       </header>
 
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px' }}>
         {/* Metrics */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>Total Clients</div>
-            <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#111827' }}>{stats.total}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '32px' }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '24px',
+            borderRadius: '12px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            border: '1px solid #e5e7eb',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'
+            e.currentTarget.style.transform = 'translateY(-2px)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'
+            e.currentTarget.style.transform = 'translateY(0)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Clients</div>
+              <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📊</div>
+            </div>
+            <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#111827', marginBottom: '8px' }}>{stats.total}</div>
+            <div style={{ fontSize: '12px', color: '#10b981' }}>
+              <span style={{ fontWeight: '600' }}>Active pipeline</span>
+            </div>
           </div>
-          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>In Progress</div>
-            <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#3b82f6' }}>{stats.inProgress}</div>
+
+          <div style={{
+            backgroundColor: 'white',
+            padding: '24px',
+            borderRadius: '12px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            border: '1px solid #dbeafe',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)'
+            e.currentTarget.style.transform = 'translateY(-2px)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'
+            e.currentTarget.style.transform = 'translateY(0)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.5px' }}>In Progress</div>
+              <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>⏳</div>
+            </div>
+            <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#3b82f6', marginBottom: '8px' }}>{stats.inProgress}</div>
+            <div style={{ fontSize: '12px', color: '#6b7280' }}>
+              <span style={{ fontWeight: '600' }}>{stats.total > 0 ? Math.round((stats.inProgress / stats.total) * 100) : 0}%</span> of total
+            </div>
           </div>
-          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>Completed</div>
-            <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#10b981' }}>{stats.completed}</div>
+
+          <div style={{
+            backgroundColor: 'white',
+            padding: '24px',
+            borderRadius: '12px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            border: '1px solid #d1fae5',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)'
+            e.currentTarget.style.transform = 'translateY(-2px)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'
+            e.currentTarget.style.transform = 'translateY(0)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Completed</div>
+              <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>✅</div>
+            </div>
+            <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#10b981', marginBottom: '8px' }}>{stats.completed}</div>
+            <div style={{ fontSize: '12px', color: '#6b7280' }}>
+              <span style={{ fontWeight: '600' }}>{stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%</span> success rate
+            </div>
           </div>
-          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>Blocked</div>
-            <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#ef4444' }}>{stats.blocked}</div>
+
+          <div style={{
+            backgroundColor: 'white',
+            padding: '24px',
+            borderRadius: '12px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            border: '1px solid #fee2e2',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.3)'
+            e.currentTarget.style.transform = 'translateY(-2px)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'
+            e.currentTarget.style.transform = 'translateY(0)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Blocked</div>
+              <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🚫</div>
+            </div>
+            <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#ef4444', marginBottom: '8px' }}>{stats.blocked}</div>
+            <div style={{ fontSize: '12px', color: '#ef4444' }}>
+              <span style={{ fontWeight: '600' }}>Requires attention</span>
+            </div>
           </div>
         </div>
 
         {/* Search and Filters */}
-        <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '20px', marginBottom: '24px' }}>
+        <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '24px', marginBottom: '32px', border: '1px solid #e5e7eb' }}>
+          <div style={{ marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', margin: 0 }}>Search & Filter Clients</h3>
+          </div>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
             {/* Search Input */}
-            <div style={{ flex: '1', minWidth: '300px' }}>
-              <input
-                type="text"
-                placeholder="🔍 Search by client name, entity ID, or jurisdiction..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 16px',
-                  fontSize: '14px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  outline: 'none',
-                }}
-                onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-                onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
-              />
+            <div style={{ flex: '1', minWidth: '350px' }}>
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '18px', color: '#9ca3af' }}>🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search by client name, entity ID, or jurisdiction..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px 12px 44px',
+                    fontSize: '14px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    outline: 'none',
+                    transition: 'all 0.2s'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#3b82f6'
+                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)'
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#e5e7eb'
+                    e.target.style.boxShadow = 'none'
+                  }}
+                />
+              </div>
             </div>
 
             {/* Status Filters */}
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <button
                 onClick={() => setStatusFilter('all')}
                 style={{
-                  padding: '8px 16px',
+                  padding: '10px 20px',
                   fontSize: '14px',
-                  fontWeight: '500',
-                  border: 'none',
-                  borderRadius: '6px',
+                  fontWeight: '600',
+                  border: statusFilter === 'all' ? '2px solid #3b82f6' : '2px solid #e5e7eb',
+                  borderRadius: '8px',
                   cursor: 'pointer',
-                  backgroundColor: statusFilter === 'all' ? '#3b82f6' : '#f3f4f6',
+                  backgroundColor: statusFilter === 'all' ? '#3b82f6' : 'white',
                   color: statusFilter === 'all' ? 'white' : '#374151',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (statusFilter !== 'all') {
+                    e.currentTarget.style.backgroundColor = '#f9fafb'
+                    e.currentTarget.style.borderColor = '#3b82f6'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (statusFilter !== 'all') {
+                    e.currentTarget.style.backgroundColor = 'white'
+                    e.currentTarget.style.borderColor = '#e5e7eb'
+                  }
                 }}
               >
                 All
@@ -217,14 +337,27 @@ export default function Dashboard() {
               <button
                 onClick={() => setStatusFilter('in_progress')}
                 style={{
-                  padding: '8px 16px',
+                  padding: '10px 20px',
                   fontSize: '14px',
-                  fontWeight: '500',
-                  border: 'none',
-                  borderRadius: '6px',
+                  fontWeight: '600',
+                  border: statusFilter === 'in_progress' ? '2px solid #3b82f6' : '2px solid #e5e7eb',
+                  borderRadius: '8px',
                   cursor: 'pointer',
-                  backgroundColor: statusFilter === 'in_progress' ? '#3b82f6' : '#f3f4f6',
+                  backgroundColor: statusFilter === 'in_progress' ? '#3b82f6' : 'white',
                   color: statusFilter === 'in_progress' ? 'white' : '#374151',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (statusFilter !== 'in_progress') {
+                    e.currentTarget.style.backgroundColor = '#dbeafe'
+                    e.currentTarget.style.borderColor = '#3b82f6'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (statusFilter !== 'in_progress') {
+                    e.currentTarget.style.backgroundColor = 'white'
+                    e.currentTarget.style.borderColor = '#e5e7eb'
+                  }
                 }}
               >
                 In Progress
@@ -232,14 +365,27 @@ export default function Dashboard() {
               <button
                 onClick={() => setStatusFilter('blocked')}
                 style={{
-                  padding: '8px 16px',
+                  padding: '10px 20px',
                   fontSize: '14px',
-                  fontWeight: '500',
-                  border: 'none',
-                  borderRadius: '6px',
+                  fontWeight: '600',
+                  border: statusFilter === 'blocked' ? '2px solid #ef4444' : '2px solid #e5e7eb',
+                  borderRadius: '8px',
                   cursor: 'pointer',
-                  backgroundColor: statusFilter === 'blocked' ? '#ef4444' : '#f3f4f6',
+                  backgroundColor: statusFilter === 'blocked' ? '#ef4444' : 'white',
                   color: statusFilter === 'blocked' ? 'white' : '#374151',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (statusFilter !== 'blocked') {
+                    e.currentTarget.style.backgroundColor = '#fee2e2'
+                    e.currentTarget.style.borderColor = '#ef4444'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (statusFilter !== 'blocked') {
+                    e.currentTarget.style.backgroundColor = 'white'
+                    e.currentTarget.style.borderColor = '#e5e7eb'
+                  }
                 }}
               >
                 Blocked
@@ -247,14 +393,27 @@ export default function Dashboard() {
               <button
                 onClick={() => setStatusFilter('completed')}
                 style={{
-                  padding: '8px 16px',
+                  padding: '10px 20px',
                   fontSize: '14px',
-                  fontWeight: '500',
-                  border: 'none',
-                  borderRadius: '6px',
+                  fontWeight: '600',
+                  border: statusFilter === 'completed' ? '2px solid #10b981' : '2px solid #e5e7eb',
+                  borderRadius: '8px',
                   cursor: 'pointer',
-                  backgroundColor: statusFilter === 'completed' ? '#10b981' : '#f3f4f6',
+                  backgroundColor: statusFilter === 'completed' ? '#10b981' : 'white',
                   color: statusFilter === 'completed' ? 'white' : '#374151',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (statusFilter !== 'completed') {
+                    e.currentTarget.style.backgroundColor = '#d1fae5'
+                    e.currentTarget.style.borderColor = '#10b981'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (statusFilter !== 'completed') {
+                    e.currentTarget.style.backgroundColor = 'white'
+                    e.currentTarget.style.borderColor = '#e5e7eb'
+                  }
                 }}
               >
                 Completed
@@ -263,17 +422,28 @@ export default function Dashboard() {
           </div>
 
           {/* Results count */}
-          <div style={{ marginTop: '12px', fontSize: '14px', color: '#6b7280' }}>
-            Showing {filteredClients.length} of {allClients.length} clients
+          <div style={{ marginTop: '16px', fontSize: '13px', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontWeight: '600', color: '#111827' }}>Showing {filteredClients.length}</span>
+            {filteredClients.length !== allClients.length && (
+              <span>of {allClients.length} total clients</span>
+            )}
+            {filteredClients.length === allClients.length && (
+              <span>clients</span>
+            )}
           </div>
         </div>
 
         {/* Clients List */}
-        <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
-          <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#111827', margin: 0 }}>
-              Client Onboarding Status
-            </h2>
+        <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+          <div style={{ padding: '24px', borderBottom: '1px solid #e5e7eb', backgroundColor: '#fafafa' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: 0 }}>
+                Client Pipeline
+              </h2>
+              <div style={{ fontSize: '12px', color: '#6b7280', backgroundColor: '#f3f4f6', padding: '6px 12px', borderRadius: '6px', fontWeight: '500' }}>
+                {filteredClients.length} {filteredClients.length === 1 ? 'client' : 'clients'}
+              </div>
+            </div>
           </div>
 
           {filteredClients.length === 0 ? (
