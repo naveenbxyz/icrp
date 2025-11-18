@@ -20,18 +20,35 @@ def clear_database():
 
 def create_onboarding_stages(db, client_id: int, stages_config: list):
     """Helper to create onboarding stages"""
+    # Default target TATs (in hours) for each stage
+    default_target_tats = {
+        StageName.LEGAL_ENTITY_SETUP: 120,  # 5 days
+        StageName.REG_CLASSIFICATION: 240,  # 10 days
+        StageName.FM_ACCOUNT_REQUEST: 360,  # 15 days
+        StageName.STATIC_DATA_ENRICHMENT: 240,  # 10 days
+        StageName.SSI_VALIDATION: 360,  # 15 days
+        StageName.VALUATION_SETUP: 240  # 10 days
+    }
+
     stages = []
     for idx, config in enumerate(stages_config):
+        stage_name = config["name"]
         stage = OnboardingStage(
             client_id=client_id,
-            stage_name=config["name"],
+            stage_name=stage_name,
             status=config["status"],
             assigned_team=config.get("assigned_team"),
             started_date=config.get("started_date"),
             completed_date=config.get("completed_date"),
             notes=config.get("notes"),
-            order=idx
+            order=idx,
+            target_tat_hours=config.get("target_tat_hours", default_target_tats.get(stage_name, 240))
         )
+
+        # Calculate TAT if stage has started
+        if stage.started_date:
+            stage.calculate_tat()
+
         stages.append(stage)
         db.add(stage)
     return stages
@@ -55,7 +72,18 @@ def seed_data():
             entity_type="Limited Liability Partnership",
             onboarding_status=OnboardingStatus.COMPLETED,
             assigned_rm="Sarah Johnson",
-            created_date=datetime.now() - timedelta(days=90)
+            created_date=datetime.now() - timedelta(days=90),
+            client_attributes={
+                "account_type": "subfund",
+                "booking_location": "UK/London",
+                "product_grid": {
+                    "product_group": "financial_markets",
+                    "product_category": "fx",
+                    "product_type": "forward",
+                    "product_status": "approved",
+                    "bank_entity": "UK/London"
+                }
+            }
         )
         db.add(client1)
         db.flush()
@@ -85,6 +113,235 @@ def seed_data():
             validation_status=ValidationStatus.VALIDATED
         )
         db.add(reg1)
+
+        # Add realistic documents for Client1 (completed client) - Full lifecycle demonstration
+        print("  Creating documents for Client1 (Aldgate Capital Partners)...")
+
+        # COMPLIANT DOCUMENTS
+        doc1_1 = Document(
+            client_id=client1.id,
+            regulatory_classification_id=reg1.id,
+            filename="Professional_Client_Attestation_Aldgate_2024.pdf",
+            file_path="/uploads/client1/professional_client_attestation.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=85),
+            uploaded_by="Sarah Johnson",
+            document_category=DocumentCategory.CLIENT_CONFIRMATION,
+            ocr_status=OCRStatus.COMPLETED,
+            extracted_text="Professional Client Attestation - Aldgate Capital Partners LLP confirms status as Professional Client under MiFID II..."
+        )
+        db.add(doc1_1)
+
+        doc1_2 = Document(
+            client_id=client1.id,
+            regulatory_classification_id=reg1.id,
+            filename="Entity_Registration_Certificate_UK_2024.pdf",
+            file_path="/uploads/client1/registration_certificate.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=80),
+            uploaded_by="Sarah Johnson",
+            document_category=DocumentCategory.ENTITY_DOCUMENTATION,
+            ocr_status=OCRStatus.COMPLETED,
+            extracted_text="Certificate of Registration - Companies House UK - Aldgate Capital Partners LLP, Registration Number: OC123456..."
+        )
+        db.add(doc1_2)
+
+        doc1_3 = Document(
+            client_id=client1.id,
+            regulatory_classification_id=reg1.id,
+            filename="Board_Resolution_Trading_Authorization_2024.pdf",
+            file_path="/uploads/client1/board_resolution.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=80),
+            uploaded_by="Sarah Johnson",
+            document_category=DocumentCategory.CLIENT_CONFIRMATION,
+            ocr_status=OCRStatus.COMPLETED,
+            extracted_text="Board Resolution authorizing financial markets trading activities..."
+        )
+        db.add(doc1_3)
+
+        doc1_4 = Document(
+            client_id=client1.id,
+            regulatory_classification_id=reg1.id,
+            filename="Financial_Statements_FY2023_Audited.pdf",
+            file_path="/uploads/client1/financial_statements_2023.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=75),
+            uploaded_by="Sarah Johnson",
+            document_category=DocumentCategory.FINANCIAL_STATEMENTS,
+            ocr_status=OCRStatus.COMPLETED,
+            extracted_text="Audited Financial Statements for Year Ending December 31, 2023..."
+        )
+        db.add(doc1_4)
+
+        doc1_5 = Document(
+            client_id=client1.id,
+            regulatory_classification_id=reg1.id,
+            filename="KYC_Documentation_Package_Complete.pdf",
+            file_path="/uploads/client1/kyc_package.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=85),
+            uploaded_by="Sarah Johnson",
+            document_category=DocumentCategory.CLIENT_CONFIRMATION,
+            ocr_status=OCRStatus.COMPLETED,
+            extracted_text="Know Your Customer documentation package including identity verification, beneficial ownership..."
+        )
+        db.add(doc1_5)
+
+        # EXPIRED DOCUMENTS (to demonstrate expiry workflow)
+        doc1_6 = Document(
+            client_id=client1.id,
+            regulatory_classification_id=reg1.id,
+            filename="Risk_Disclosure_Statement_2023.pdf",
+            file_path="/uploads/client1/risk_disclosure_expired.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=200),  # Uploaded 200 days ago, expired
+            uploaded_by="Sarah Johnson",
+            document_category=DocumentCategory.PRODUCT_ELIGIBILITY,
+            ocr_status=OCRStatus.COMPLETED,
+            extracted_text="Risk Disclosure Statement - Client acknowledges understanding of derivative trading risks..."
+        )
+        db.add(doc1_6)
+
+        doc1_7 = Document(
+            client_id=client1.id,
+            regulatory_classification_id=reg1.id,
+            filename="Product_Approval_Matrix_Q1_2024.pdf",
+            file_path="/uploads/client1/product_approval_expired.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=100),  # Uploaded 100 days ago, expired
+            uploaded_by="Sarah Johnson",
+            document_category=DocumentCategory.PRODUCT_ELIGIBILITY,
+            ocr_status=OCRStatus.COMPLETED,
+            extracted_text="Product Approval Matrix - Approved products: FX Forwards, Interest Rate Swaps..."
+        )
+        db.add(doc1_7)
+
+        # PENDING REVIEW DOCUMENTS (recently uploaded, awaiting validation)
+        doc1_8 = Document(
+            client_id=client1.id,
+            regulatory_classification_id=reg1.id,
+            filename="Financial_Statements_FY2024_Q3_Unaudited.pdf",
+            file_path="/uploads/client1/financial_statements_2024_q3.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=2),
+            uploaded_by="Sarah Johnson",
+            document_category=DocumentCategory.FINANCIAL_STATEMENTS,
+            ocr_status=OCRStatus.PROCESSING,
+            extracted_text=None  # Still processing
+        )
+        db.add(doc1_8)
+
+        doc1_9 = Document(
+            client_id=client1.id,
+            regulatory_classification_id=reg1.id,
+            filename="Director_Identification_Updated_2024.pdf",
+            file_path="/uploads/client1/director_id_2024.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=3),
+            uploaded_by="Sarah Johnson",
+            document_category=DocumentCategory.CLIENT_CONFIRMATION,
+            ocr_status=OCRStatus.COMPLETED,
+            extracted_text="Updated director identification documents for all managing partners..."
+        )
+        db.add(doc1_9)
+
+        # Add RegimeEligibility records for Client1 (demonstrate rule-based assessment)
+        print("  Creating regime eligibility records for Client1...")
+
+        # MIFID - Eligible
+        elig1_1 = RegimeEligibility(
+            client_id=client1.id,
+            regime="MIFID",
+            is_eligible=True,
+            eligibility_reason="Client meets all 1 classification rules for MIFID",
+            matched_rules=[{
+                "rule_id": 1,
+                "rule_type": "account_type",
+                "rule_name": "MIFID Account Type Eligibility"
+            }],
+            unmatched_rules=[],
+            client_attributes=client1.client_attributes,
+            rule_version=1,
+            last_evaluated_date=datetime.now() - timedelta(days=80)
+        )
+        db.add(elig1_1)
+
+        # EMIR - Eligible
+        elig1_2 = RegimeEligibility(
+            client_id=client1.id,
+            regime="EMIR",
+            is_eligible=True,
+            eligibility_reason="Client meets all 1 classification rules for EMIR",
+            matched_rules=[{
+                "rule_id": 2,
+                "rule_type": "account_type",
+                "rule_name": "EMIR Account Type Eligibility"
+            }],
+            unmatched_rules=[],
+            client_attributes=client1.client_attributes,
+            rule_version=1,
+            last_evaluated_date=datetime.now() - timedelta(days=80)
+        )
+        db.add(elig1_2)
+
+        # SFTR - Not Eligible (example of failed rule)
+        elig1_3 = RegimeEligibility(
+            client_id=client1.id,
+            regime="SFTR",
+            is_eligible=False,
+            eligibility_reason="Client matches 0/1 rules. Missing: SFTR Account Type Eligibility",
+            matched_rules=[],
+            unmatched_rules=[{
+                "rule_id": 3,
+                "rule_type": "account_type",
+                "rule_name": "SFTR Account Type Eligibility",
+                "expected": "pension_fund or insurance_company",
+                "actual": "subfund"
+            }],
+            client_attributes=client1.client_attributes,
+            rule_version=1,
+            last_evaluated_date=datetime.now() - timedelta(days=80)
+        )
+        db.add(elig1_3)
+
+        # Dodd Frank (US Person - CFTC) - Not Eligible
+        elig1_4 = RegimeEligibility(
+            client_id=client1.id,
+            regime="Dodd Frank (US Person - CFTC)",
+            is_eligible=False,
+            eligibility_reason="Client matches 0/1 rules. Missing: US Person criteria",
+            matched_rules=[],
+            unmatched_rules=[{
+                "rule_id": 4,
+                "rule_type": "booking_location",
+                "rule_name": "US Person - CFTC Location Requirement",
+                "expected": "US/*",
+                "actual": "UK/London"
+            }],
+            client_attributes=client1.client_attributes,
+            rule_version=1,
+            last_evaluated_date=datetime.now() - timedelta(days=80)
+        )
+        db.add(elig1_4)
+
+        # Stays Exempt - Eligible
+        elig1_5 = RegimeEligibility(
+            client_id=client1.id,
+            regime="Stays Exempt",
+            is_eligible=True,
+            eligibility_reason="Client meets all 1 classification rules for Stays Exempt",
+            matched_rules=[{
+                "rule_id": 5,
+                "rule_type": "account_type",
+                "rule_name": "Stays Exempt Account Type Eligibility"
+            }],
+            unmatched_rules=[],
+            client_attributes=client1.client_attributes,
+            rule_version=1,
+            last_evaluated_date=datetime.now() - timedelta(days=80)
+        )
+        db.add(elig1_5)
 
         # Client 2: US Corporate Pension Fund - In Progress (SSI Validation)
         client2 = Client(
@@ -362,7 +619,18 @@ def seed_data():
             entity_type="Sovereign Wealth Fund",
             onboarding_status=OnboardingStatus.COMPLETED,
             assigned_rm="David Wong",
-            created_date=datetime.now() - timedelta(days=120)
+            created_date=datetime.now() - timedelta(days=120),
+            client_attributes={
+                "account_type": "trading_entity",
+                "booking_location": "Singapore/DBS",
+                "product_grid": {
+                    "product_group": "financial_markets",
+                    "product_category": "interest_rate",
+                    "product_type": "swap",
+                    "product_status": "approved",
+                    "bank_entity": "Singapore/DBS"
+                }
+            }
         )
         db.add(client7)
         db.flush()
@@ -392,6 +660,251 @@ def seed_data():
             validation_status=ValidationStatus.VALIDATED
         )
         db.add(reg7)
+
+        # Add realistic documents for Client7 (completed client) - Singapore focus
+        print("  Creating documents for Client7 (Singapore Strategic Investment Fund)...")
+
+        # COMPLIANT DOCUMENTS
+        doc7_1 = Document(
+            client_id=client7.id,
+            regulatory_classification_id=reg7.id,
+            filename="Professional_Client_Attestation_Singapore_SWF_2024.pdf",
+            file_path="/uploads/client7/professional_client_attestation.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=118),
+            uploaded_by="David Wong",
+            document_category=DocumentCategory.CLIENT_CONFIRMATION,
+            ocr_status=OCRStatus.COMPLETED,
+            extracted_text="Professional Client (Per Se) Attestation - Singapore Strategic Investment Fund qualifies as Professional Client under MiFID II Annex II..."
+        )
+        db.add(doc7_1)
+
+        doc7_2 = Document(
+            client_id=client7.id,
+            regulatory_classification_id=reg7.id,
+            filename="MAS_Registration_Certificate_2024.pdf",
+            file_path="/uploads/client7/mas_registration.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=115),
+            uploaded_by="David Wong",
+            document_category=DocumentCategory.ENTITY_DOCUMENTATION,
+            ocr_status=OCRStatus.COMPLETED,
+            extracted_text="Monetary Authority of Singapore - Certificate of Registration for Fund Management..."
+        )
+        db.add(doc7_2)
+
+        doc7_3 = Document(
+            client_id=client7.id,
+            regulatory_classification_id=reg7.id,
+            filename="Board_Resolution_Derivatives_Trading_2024.pdf",
+            file_path="/uploads/client7/board_resolution.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=115),
+            uploaded_by="David Wong",
+            document_category=DocumentCategory.CLIENT_CONFIRMATION,
+            ocr_status=OCRStatus.COMPLETED,
+            extracted_text="Board Resolution authorizing OTC derivatives trading and collateral arrangements..."
+        )
+        db.add(doc7_3)
+
+        doc7_4 = Document(
+            client_id=client7.id,
+            regulatory_classification_id=reg7.id,
+            filename="Audited_Financial_Statements_FY2023.pdf",
+            file_path="/uploads/client7/financial_statements_2023.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=110),
+            uploaded_by="David Wong",
+            document_category=DocumentCategory.FINANCIAL_STATEMENTS,
+            ocr_status=OCRStatus.COMPLETED,
+            extracted_text="Audited Financial Statements - Assets Under Management: SGD 45 billion..."
+        )
+        db.add(doc7_4)
+
+        doc7_5 = Document(
+            client_id=client7.id,
+            regulatory_classification_id=reg7.id,
+            filename="KYC_AML_Package_Singapore_SWF.pdf",
+            file_path="/uploads/client7/kyc_aml_package.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=118),
+            uploaded_by="David Wong",
+            document_category=DocumentCategory.CLIENT_CONFIRMATION,
+            ocr_status=OCRStatus.COMPLETED,
+            extracted_text="KYC and AML documentation for sovereign wealth fund - Government ownership structure..."
+        )
+        db.add(doc7_5)
+
+        doc7_6 = Document(
+            client_id=client7.id,
+            regulatory_classification_id=reg7.id,
+            filename="Investment_Mandate_Documentation_2024.pdf",
+            file_path="/uploads/client7/investment_mandate.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=110),
+            uploaded_by="David Wong",
+            document_category=DocumentCategory.PRODUCT_ELIGIBILITY,
+            ocr_status=OCRStatus.COMPLETED,
+            extracted_text="Investment Mandate - Authorized products: FX, Rates, Credit, Equity Derivatives..."
+        )
+        db.add(doc7_6)
+
+        # EXPIRED DOCUMENTS
+        doc7_7 = Document(
+            client_id=client7.id,
+            regulatory_classification_id=reg7.id,
+            filename="Risk_Assessment_Report_2023.pdf",
+            file_path="/uploads/client7/risk_assessment_expired.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=195),
+            uploaded_by="David Wong",
+            document_category=DocumentCategory.PRODUCT_ELIGIBILITY,
+            ocr_status=OCRStatus.COMPLETED,
+            extracted_text="Annual Risk Assessment Report for derivatives trading activities..."
+        )
+        db.add(doc7_7)
+
+        # PENDING REVIEW DOCUMENTS
+        doc7_8 = Document(
+            client_id=client7.id,
+            regulatory_classification_id=reg7.id,
+            filename="Quarterly_Investment_Report_Q4_2024.pdf",
+            file_path="/uploads/client7/quarterly_report_q4_2024.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=1),
+            uploaded_by="David Wong",
+            document_category=DocumentCategory.FINANCIAL_STATEMENTS,
+            ocr_status=OCRStatus.PROCESSING,
+            extracted_text=None
+        )
+        db.add(doc7_8)
+
+        doc7_9 = Document(
+            client_id=client7.id,
+            regulatory_classification_id=reg7.id,
+            filename="Updated_Authorized_Signatories_List_2024.pdf",
+            file_path="/uploads/client7/authorized_signatories_2024.pdf",
+            file_type="application/pdf",
+            upload_date=datetime.now() - timedelta(days=4),
+            uploaded_by="David Wong",
+            document_category=DocumentCategory.CLIENT_CONFIRMATION,
+            ocr_status=OCRStatus.COMPLETED,
+            extracted_text="Updated list of authorized signatories for trading activities..."
+        )
+        db.add(doc7_9)
+
+        # Add RegimeEligibility records for Client7 (Singapore-focused regimes)
+        print("  Creating regime eligibility records for Client7...")
+
+        # MAS Margin - Eligible
+        elig7_1 = RegimeEligibility(
+            client_id=client7.id,
+            regime="MAS Margin",
+            is_eligible=True,
+            eligibility_reason="Client meets all 1 classification rules for MAS Margin",
+            matched_rules=[{
+                "rule_id": 6,
+                "rule_type": "account_type",
+                "rule_name": "MAS Margin Account Type Eligibility"
+            }],
+            unmatched_rules=[],
+            client_attributes=client7.client_attributes,
+            rule_version=1,
+            last_evaluated_date=datetime.now() - timedelta(days=115)
+        )
+        db.add(elig7_1)
+
+        # MAS Clearing - Eligible
+        elig7_2 = RegimeEligibility(
+            client_id=client7.id,
+            regime="MAS Clearing",
+            is_eligible=True,
+            eligibility_reason="Client meets all 1 classification rules for MAS Clearing",
+            matched_rules=[{
+                "rule_id": 7,
+                "rule_type": "account_type",
+                "rule_name": "MAS Clearing Account Type Eligibility"
+            }],
+            unmatched_rules=[],
+            client_attributes=client7.client_attributes,
+            rule_version=1,
+            last_evaluated_date=datetime.now() - timedelta(days=115)
+        )
+        db.add(elig7_2)
+
+        # MAS Transaction Reporting - Eligible
+        elig7_3 = RegimeEligibility(
+            client_id=client7.id,
+            regime="MAS Transaction Reporting",
+            is_eligible=True,
+            eligibility_reason="Client meets all 1 classification rules for MAS Transaction Reporting",
+            matched_rules=[{
+                "rule_id": 8,
+                "rule_type": "account_type",
+                "rule_name": "MAS Transaction Reporting Account Type Eligibility"
+            }],
+            unmatched_rules=[],
+            client_attributes=client7.client_attributes,
+            rule_version=1,
+            last_evaluated_date=datetime.now() - timedelta(days=115)
+        )
+        db.add(elig7_3)
+
+        # ASIC TR - Not Eligible (wrong jurisdiction)
+        elig7_4 = RegimeEligibility(
+            client_id=client7.id,
+            regime="ASIC TR",
+            is_eligible=False,
+            eligibility_reason="Client matches 0/1 rules. Missing: Australian jurisdiction",
+            matched_rules=[],
+            unmatched_rules=[{
+                "rule_id": 9,
+                "rule_type": "booking_location",
+                "rule_name": "ASIC TR Location Requirement",
+                "expected": "Australia/*",
+                "actual": "Singapore/DBS"
+            }],
+            client_attributes=client7.client_attributes,
+            rule_version=1,
+            last_evaluated_date=datetime.now() - timedelta(days=115)
+        )
+        db.add(elig7_4)
+
+        # MIFID - Eligible (international exposure)
+        elig7_5 = RegimeEligibility(
+            client_id=client7.id,
+            regime="MIFID",
+            is_eligible=True,
+            eligibility_reason="Client meets all 1 classification rules for MIFID",
+            matched_rules=[{
+                "rule_id": 1,
+                "rule_type": "account_type",
+                "rule_name": "MIFID Account Type Eligibility"
+            }],
+            unmatched_rules=[],
+            client_attributes=client7.client_attributes,
+            rule_version=1,
+            last_evaluated_date=datetime.now() - timedelta(days=115)
+        )
+        db.add(elig7_5)
+
+        # Stays Exempt - Eligible
+        elig7_6 = RegimeEligibility(
+            client_id=client7.id,
+            regime="Stays Exempt",
+            is_eligible=True,
+            eligibility_reason="Client meets all 1 classification rules for Stays Exempt",
+            matched_rules=[{
+                "rule_id": 5,
+                "rule_type": "account_type",
+                "rule_name": "Stays Exempt Account Type Eligibility"
+            }],
+            unmatched_rules=[],
+            client_attributes=client7.client_attributes,
+            rule_version=1,
+            last_evaluated_date=datetime.now() - timedelta(days=115)
+        )
+        db.add(elig7_6)
 
         # Client 8: Australian Superannuation Fund
         client8 = Client(
@@ -739,6 +1252,54 @@ def seed_data():
 
         db.commit()
 
+        # =====================================================
+        # ALL ADDITIONAL REGIMES - Classification Rules
+        # =====================================================
+        print("\nCreating classification rules for all 20 regimes...")
+
+        # List of all regimes to create basic rules for
+        all_regimes = [
+            "MIFID", "EMIR", "MAS Margin", "MAS Clearing", "MAS Transaction Reporting",
+            "MAS FAIR Client Classification", "Dodd Frank (US Person - CFTC)", "Dodd Frank (SEC)",
+            "SFTR", "HKMA Margin", "HKMA Clearing", "HKMA Transaction Reporting",
+            "Canadian Transaction Reporting(CAD)", "RBI Variation Margin", "India NDDC TR",
+            "ASIC TR", "ZAR MR", "Stays Exempt", "DF Deemed ISDA", "Indonesia Margin Classification"
+        ]
+
+        # Create basic classification rules for each regime
+        for regime in all_regimes:
+            # Create basic account type rule for each regime
+            rule = ClassificationRule(
+                regime=regime,
+                rule_type="account_type",
+                rule_name=f"{regime} Account Type Eligibility",
+                rule_config={
+                    "in_scope": ["subfund", "trading_entity", "pooled_account", "allocation_account"],
+                    "out_of_scope": ["private_banking", "business_banking"]
+                },
+                description=f"Basic account type eligibility for {regime} regime",
+                is_active=True,
+                version=1,
+                created_by="System"
+            )
+            db.add(rule)
+
+            # Create basic mandatory evidence for each regime
+            evidence = MandatoryEvidence(
+                regime=regime,
+                evidence_type="kyc_documentation",
+                evidence_name=f"{regime} KYC Documentation",
+                category=EvidenceCategory.KYC_DOCUMENTATION,
+                description=f"KYC documentation required for {regime} regime compliance",
+                is_mandatory=True,
+                validity_days=365,
+                is_active=True
+            )
+            db.add(evidence)
+
+        print(f"Created basic classification rules for {len(all_regimes)} regimes")
+        db.commit()
+
         # Evaluate RBI eligibility for new clients
         print("\nEvaluating RBI eligibility for clients...")
         engine = ClassificationEngine(db)
@@ -773,7 +1334,16 @@ def seed_data():
         print("12. Delhi Investment Fund (IN) - RBI Partial (Pending Approval) ⚠️")
         print("13. Bangalore Private Wealth Management (IN) - RBI Out of Scope ❌")
         print("\n" + "="*70)
-        print("RBI Classification Rules Created: 3")
+        print("Regulatory Regimes Configured: 20")
+        print("  - MIFID, EMIR, SFTR")
+        print("  - MAS Margin, MAS Clearing, MAS Transaction Reporting, MAS FAIR Client Classification")
+        print("  - HKMA Margin, HKMA Clearing, HKMA Transaction Reporting")
+        print("  - Dodd Frank (US Person - CFTC), Dodd Frank (SEC), DF Deemed ISDA")
+        print("  - Canadian Transaction Reporting(CAD)")
+        print("  - RBI Variation Margin, India NDDC TR")
+        print("  - ASIC TR, ZAR MR")
+        print("  - Stays Exempt, Indonesia Margin Classification")
+        print("\nRBI Detailed Classification Rules Created: 3")
         print("  - Account Type Eligibility")
         print("  - Booking Location Requirement")
         print("  - Product Grid Approval")

@@ -86,7 +86,7 @@ export default function Dashboard() {
     } else {
       setExpandedClient(clientId)
 
-      // Fetch stages if not already loaded
+      // Fetch stages if not already loaded (includes TAT calculations)
       if (!clientStages[clientId]) {
         try {
           const res = await fetch(`http://localhost:8000/api/clients/${clientId}/onboarding`)
@@ -528,9 +528,24 @@ export default function Dashboard() {
                     {/* Expanded Stage Timeline */}
                     {isExpanded && (
                       <div style={{ padding: '24px', backgroundColor: '#f9fafb', borderTop: '1px solid #e5e7eb' }}>
-                        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '20px' }}>
-                          Onboarding Progress
-                        </h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', margin: 0 }}>
+                            Onboarding Progress
+                          </h3>
+                          {client.cumulative_tat_days && (
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '2px' }}>
+                                Cumulative TAT
+                              </div>
+                              <div style={{ fontSize: '20px', fontWeight: '700', color: '#059669' }}>
+                                {client.cumulative_tat_days} days
+                              </div>
+                              <div style={{ fontSize: '9px', color: '#9ca3af' }}>
+                                ({client.cumulative_tat_hours?.toFixed(1)} hours)
+                              </div>
+                            </div>
+                          )}
+                        </div>
 
                         {stages.length === 0 ? (
                           <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
@@ -556,6 +571,7 @@ export default function Dashboard() {
                                 const status = stage?.status || 'not_started'
                                 const color = getStageStatusColor(status)
                                 const isActive = status === 'in_progress'
+                                const isOverdue = stage?.is_overdue || false
 
                                 return (
                                   <div key={stageName} style={{ textAlign: 'center' }}>
@@ -569,8 +585,8 @@ export default function Dashboard() {
                                       display: 'flex',
                                       alignItems: 'center',
                                       justifyContent: 'center',
-                                      border: isActive ? '3px solid #dbeafe' : 'none',
-                                      boxShadow: isActive ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
+                                      border: isActive ? '3px solid #dbeafe' : isOverdue ? '2px solid #fca5a5' : 'none',
+                                      boxShadow: isActive ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : isOverdue ? '0 0 0 3px rgba(239, 68, 68, 0.1)' : 'none',
                                     }}>
                                       {status === 'completed' && (
                                         <span style={{ color: 'white', fontSize: '16px' }}>✓</span>
@@ -589,15 +605,39 @@ export default function Dashboard() {
                                       color: status === 'not_started' ? '#9ca3af' : '#374151',
                                       fontWeight: isActive ? '600' : '400',
                                       lineHeight: '1.3',
+                                      marginBottom: '6px'
                                     }}>
                                       {stageName}
                                     </div>
+
+                                    {/* TAT Display */}
+                                    {stage && stage.tat_days !== null && stage.tat_days !== undefined && (
+                                      <div style={{
+                                        fontSize: '11px',
+                                        fontWeight: '600',
+                                        color: isOverdue ? '#dc2626' : '#059669',
+                                        marginBottom: '2px',
+                                        backgroundColor: isOverdue ? '#fee2e2' : '#d1fae5',
+                                        padding: '2px 6px',
+                                        borderRadius: '4px',
+                                        display: 'inline-block',
+                                      }}>
+                                        {stage.tat_days}d
+                                      </div>
+                                    )}
+
+                                    {/* Target TAT */}
+                                    {stage && stage.target_tat_hours && (
+                                      <div style={{ fontSize: '9px', color: '#9ca3af', marginBottom: '4px' }}>
+                                        Target: {(stage.target_tat_hours / 24).toFixed(1)}d
+                                      </div>
+                                    )}
 
                                     {/* Stage Status */}
                                     <div style={{
                                       fontSize: '10px',
                                       color: '#6b7280',
-                                      marginTop: '4px',
+                                      marginTop: '2px',
                                       textTransform: 'capitalize',
                                     }}>
                                       {status.replace('_', ' ')}

@@ -17,6 +17,7 @@ class OnboardingStageUpdate(BaseModel):
     notes: Optional[str] = None
     started_date: Optional[datetime] = None
     completed_date: Optional[datetime] = None
+    target_tat_hours: Optional[float] = None
 
 
 class OnboardingStageResponse(OnboardingStageBase):
@@ -25,5 +26,9 @@ class OnboardingStageResponse(OnboardingStageBase):
     started_date: Optional[datetime] = None
     completed_date: Optional[datetime] = None
     order: int
+    tat_hours: Optional[float] = None
+    target_tat_hours: Optional[float] = None
+    tat_days: Optional[float] = None
+    is_overdue: Optional[bool] = None
 
     model_config = ConfigDict(from_attributes=True)

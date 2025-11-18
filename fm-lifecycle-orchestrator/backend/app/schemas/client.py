@@ -29,6 +29,9 @@ class ClientResponse(ClientBase):
     onboarding_status: OnboardingStatus
     created_date: datetime
     last_updated: datetime
+    cumulative_tat_hours: Optional[float] = None
+    cumulative_tat_days: Optional[float] = None
+    expected_completion_date: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 

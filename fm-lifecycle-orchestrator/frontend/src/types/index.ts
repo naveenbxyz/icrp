@@ -78,6 +78,9 @@ export interface Client {
   current_stage?: string;
   blocked_tasks_count?: number;
   pending_documents_count?: number;
+  cumulative_tat_hours?: number | null;
+  cumulative_tat_days?: number | null;
+  expected_completion_date?: string | null;
 }
 
 export interface OnboardingStage {
@@ -90,6 +93,10 @@ export interface OnboardingStage {
   completed_date: string | null;
   notes: string | null;
   order: number;
+  tat_hours?: number | null;
+  target_tat_hours?: number | null;
+  tat_days?: number | null;
+  is_overdue?: boolean | null;
 }
 
 export interface RegulatoryClassification {
