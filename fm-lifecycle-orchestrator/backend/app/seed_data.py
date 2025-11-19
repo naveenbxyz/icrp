@@ -9,6 +9,7 @@ from .models.task import Task, TaskStatus, TaskType
 from .models.classification_rule import ClassificationRule
 from .models.regime_eligibility import RegimeEligibility
 from .models.mandatory_evidence import MandatoryEvidence, EvidenceCategory
+from .models.document_requirement import DocumentRequirement
 from .services.classification_engine import ClassificationEngine
 
 
@@ -1299,6 +1300,257 @@ def seed_data():
 
         print(f"Created basic classification rules for {len(all_regimes)} regimes")
         db.commit()
+
+        # Link seeded documents to DocumentRequirements
+        print("\nLinking seeded documents to document requirements...")
+
+        # Get all evidences to map documents to requirements
+        all_evidences = {(e.regime, e.evidence_type): e for e in db.query(MandatoryEvidence).all()}
+
+        # Client1 - MIFID regime document requirements
+        print("  Creating document requirements for Client1 (MIFID regime)...")
+
+        # Map each Client1 document to appropriate evidence and create requirement
+        # doc1_1: Professional Client Attestation -> client_confirmation evidence
+        if ("MIFID", "kyc_documentation") in all_evidences:
+            req1_1 = DocumentRequirement(
+                client_id=client1.id,
+                regime="MIFID",
+                evidence_id=all_evidences[("MIFID", "kyc_documentation")].id,
+                document_id=doc1_1.id,
+                status="compliant",
+                received_date=doc1_1.upload_date,
+                expiry_date=doc1_1.upload_date + timedelta(days=365)
+            )
+            db.add(req1_1)
+
+        # doc1_2: Registration Certificate -> entity_documentation evidence
+        if ("MIFID", "kyc_documentation") in all_evidences:
+            req1_2 = DocumentRequirement(
+                client_id=client1.id,
+                regime="MIFID",
+                evidence_id=all_evidences[("MIFID", "kyc_documentation")].id,
+                document_id=doc1_2.id,
+                status="compliant",
+                received_date=doc1_2.upload_date,
+                expiry_date=doc1_2.upload_date + timedelta(days=730)  # Registration cert valid 2 years
+            )
+            db.add(req1_2)
+
+        # doc1_3: Board Resolution -> client_confirmation evidence
+        if ("EMIR", "kyc_documentation") in all_evidences:
+            req1_3 = DocumentRequirement(
+                client_id=client1.id,
+                regime="EMIR",
+                evidence_id=all_evidences[("EMIR", "kyc_documentation")].id,
+                document_id=doc1_3.id,
+                status="compliant",
+                received_date=doc1_3.upload_date,
+                expiry_date=doc1_3.upload_date + timedelta(days=365)
+            )
+            db.add(req1_3)
+
+        # doc1_4: Financial Statements -> financial_statements evidence
+        if ("MIFID", "kyc_documentation") in all_evidences:
+            req1_4 = DocumentRequirement(
+                client_id=client1.id,
+                regime="MIFID",
+                evidence_id=all_evidences[("MIFID", "kyc_documentation")].id,
+                document_id=doc1_4.id,
+                status="compliant",
+                received_date=doc1_4.upload_date,
+                expiry_date=doc1_4.upload_date + timedelta(days=365)
+            )
+            db.add(req1_4)
+
+        # doc1_5: KYC Package -> kyc_documentation evidence
+        if ("EMIR", "kyc_documentation") in all_evidences:
+            req1_5 = DocumentRequirement(
+                client_id=client1.id,
+                regime="EMIR",
+                evidence_id=all_evidences[("EMIR", "kyc_documentation")].id,
+                document_id=doc1_5.id,
+                status="compliant",
+                received_date=doc1_5.upload_date,
+                expiry_date=doc1_5.upload_date + timedelta(days=365)
+            )
+            db.add(req1_5)
+
+        # doc1_6: Risk Disclosure (EXPIRED) -> product_eligibility evidence
+        if ("MIFID", "kyc_documentation") in all_evidences:
+            req1_6 = DocumentRequirement(
+                client_id=client1.id,
+                regime="MIFID",
+                evidence_id=all_evidences[("MIFID", "kyc_documentation")].id,
+                document_id=doc1_6.id,
+                status="expired",
+                received_date=doc1_6.upload_date,
+                expiry_date=doc1_6.upload_date + timedelta(days=180)  # Expired after 180 days
+            )
+            db.add(req1_6)
+
+        # doc1_7: Product Approval (EXPIRED) -> product_eligibility evidence
+        if ("EMIR", "kyc_documentation") in all_evidences:
+            req1_7 = DocumentRequirement(
+                client_id=client1.id,
+                regime="EMIR",
+                evidence_id=all_evidences[("EMIR", "kyc_documentation")].id,
+                document_id=doc1_7.id,
+                status="expired",
+                received_date=doc1_7.upload_date,
+                expiry_date=doc1_7.upload_date + timedelta(days=90)  # Expired after 90 days
+            )
+            db.add(req1_7)
+
+        # doc1_8: Financial Statements Q3 (PENDING REVIEW) -> financial_statements evidence
+        if ("MIFID", "kyc_documentation") in all_evidences:
+            req1_8 = DocumentRequirement(
+                client_id=client1.id,
+                regime="MIFID",
+                evidence_id=all_evidences[("MIFID", "kyc_documentation")].id,
+                document_id=doc1_8.id,
+                status="pending_review",
+                received_date=doc1_8.upload_date,
+                expiry_date=None  # Not yet validated
+            )
+            db.add(req1_8)
+
+        # doc1_9: Director ID (PENDING REVIEW) -> client_confirmation evidence
+        if ("EMIR", "kyc_documentation") in all_evidences:
+            req1_9 = DocumentRequirement(
+                client_id=client1.id,
+                regime="EMIR",
+                evidence_id=all_evidences[("EMIR", "kyc_documentation")].id,
+                document_id=doc1_9.id,
+                status="uploaded",
+                received_date=doc1_9.upload_date,
+                expiry_date=doc1_9.upload_date + timedelta(days=365)
+            )
+            db.add(req1_9)
+
+        # Client7 - MAS regime document requirements
+        print("  Creating document requirements for Client7 (MAS regimes)...")
+
+        # Map each Client7 document to appropriate evidence and create requirement
+        # doc7_1: KYC Package -> kyc_documentation evidence
+        if ("MAS Margin", "kyc_documentation") in all_evidences:
+            req7_1 = DocumentRequirement(
+                client_id=client7.id,
+                regime="MAS Margin",
+                evidence_id=all_evidences[("MAS Margin", "kyc_documentation")].id,
+                document_id=doc7_1.id,
+                status="compliant",
+                received_date=doc7_1.upload_date,
+                expiry_date=doc7_1.upload_date + timedelta(days=365)
+            )
+            db.add(req7_1)
+
+        # doc7_2: MAS Registration -> registration_certificate evidence
+        if ("MAS Clearing", "kyc_documentation") in all_evidences:
+            req7_2 = DocumentRequirement(
+                client_id=client7.id,
+                regime="MAS Clearing",
+                evidence_id=all_evidences[("MAS Clearing", "kyc_documentation")].id,
+                document_id=doc7_2.id,
+                status="compliant",
+                received_date=doc7_2.upload_date,
+                expiry_date=doc7_2.upload_date + timedelta(days=730)
+            )
+            db.add(req7_2)
+
+        # doc7_3: Financial Statements -> financial_statements evidence
+        if ("MAS Transaction Reporting", "kyc_documentation") in all_evidences:
+            req7_3 = DocumentRequirement(
+                client_id=client7.id,
+                regime="MAS Transaction Reporting",
+                evidence_id=all_evidences[("MAS Transaction Reporting", "kyc_documentation")].id,
+                document_id=doc7_3.id,
+                status="compliant",
+                received_date=doc7_3.upload_date,
+                expiry_date=doc7_3.upload_date + timedelta(days=365)
+            )
+            db.add(req7_3)
+
+        # doc7_4: Board Resolution -> board_resolution evidence
+        if ("MAS FAIR Client Classification", "kyc_documentation") in all_evidences:
+            req7_4 = DocumentRequirement(
+                client_id=client7.id,
+                regime="MAS FAIR Client Classification",
+                evidence_id=all_evidences[("MAS FAIR Client Classification", "kyc_documentation")].id,
+                document_id=doc7_4.id,
+                status="compliant",
+                received_date=doc7_4.upload_date,
+                expiry_date=doc7_4.upload_date + timedelta(days=365)
+            )
+            db.add(req7_4)
+
+        # doc7_5: Product Approval Matrix -> product_approval evidence
+        if ("MAS Margin", "kyc_documentation") in all_evidences:
+            req7_5 = DocumentRequirement(
+                client_id=client7.id,
+                regime="MAS Margin",
+                evidence_id=all_evidences[("MAS Margin", "kyc_documentation")].id,
+                document_id=doc7_5.id,
+                status="compliant",
+                received_date=doc7_5.upload_date,
+                expiry_date=doc7_5.upload_date + timedelta(days=180)
+            )
+            db.add(req7_5)
+
+        # doc7_6: Risk Disclosure (EXPIRED) -> product_eligibility evidence
+        if ("MAS Clearing", "kyc_documentation") in all_evidences:
+            req7_6 = DocumentRequirement(
+                client_id=client7.id,
+                regime="MAS Clearing",
+                evidence_id=all_evidences[("MAS Clearing", "kyc_documentation")].id,
+                document_id=doc7_6.id,
+                status="expired",
+                received_date=doc7_6.upload_date,
+                expiry_date=doc7_6.upload_date + timedelta(days=180)
+            )
+            db.add(req7_6)
+
+        # doc7_7: Client Confirmation (EXPIRED) -> client_confirmation evidence
+        if ("MAS Transaction Reporting", "kyc_documentation") in all_evidences:
+            req7_7 = DocumentRequirement(
+                client_id=client7.id,
+                regime="MAS Transaction Reporting",
+                evidence_id=all_evidences[("MAS Transaction Reporting", "kyc_documentation")].id,
+                document_id=doc7_7.id,
+                status="expired",
+                received_date=doc7_7.upload_date,
+                expiry_date=doc7_7.upload_date + timedelta(days=90)
+            )
+            db.add(req7_7)
+
+        # doc7_8: Updated Financial Statements (PENDING REVIEW) -> financial_statements evidence
+        if ("MAS FAIR Client Classification", "kyc_documentation") in all_evidences:
+            req7_8 = DocumentRequirement(
+                client_id=client7.id,
+                regime="MAS FAIR Client Classification",
+                evidence_id=all_evidences[("MAS FAIR Client Classification", "kyc_documentation")].id,
+                document_id=doc7_8.id,
+                status="pending_review",
+                received_date=doc7_8.upload_date,
+                expiry_date=None
+            )
+            db.add(req7_8)
+
+        # doc7_9: Beneficial Ownership Declaration (UPLOADED) -> client_confirmation evidence
+        if ("MAS Margin", "kyc_documentation") in all_evidences:
+            req7_9 = DocumentRequirement(
+                client_id=client7.id,
+                regime="MAS Margin",
+                evidence_id=all_evidences[("MAS Margin", "kyc_documentation")].id,
+                document_id=doc7_9.id,
+                status="uploaded",
+                received_date=doc7_9.upload_date,
+                expiry_date=doc7_9.upload_date + timedelta(days=365)
+            )
+            db.add(req7_9)
+
+        db.commit()
+        print(f"  Linked {18} documents to document requirements for demo clients")
 
         # Evaluate RBI eligibility for new clients
         print("\nEvaluating RBI eligibility for clients...")

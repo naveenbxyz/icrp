@@ -334,6 +334,66 @@ function RegimeQualificationTab({
                   </span>
                 </div>
 
+                {/* Client Attributes Used for Evaluation */}
+                {elig.client_attributes && (
+                  <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#fffbeb', borderRadius: '8px', border: '1px solid #fbbf24' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#92400e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>🔍</span>
+                      Evaluated Attributes (Snapshot)
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', fontSize: '11px' }}>
+                      {elig.client_attributes.account_type && (
+                        <div>
+                          <span style={{ fontWeight: '600', color: '#78350f' }}>Account Type:</span>{' '}
+                          <span style={{ color: '#111827', backgroundColor: '#fef3c7', padding: '2px 6px', borderRadius: '4px' }}>
+                            {elig.client_attributes.account_type}
+                          </span>
+                        </div>
+                      )}
+                      {elig.client_attributes.booking_location && (
+                        <div>
+                          <span style={{ fontWeight: '600', color: '#78350f' }}>Booking Location:</span>{' '}
+                          <span style={{ color: '#111827', backgroundColor: '#fef3c7', padding: '2px 6px', borderRadius: '4px' }}>
+                            {elig.client_attributes.booking_location}
+                          </span>
+                        </div>
+                      )}
+                      {elig.client_attributes.product_grid?.product_group && (
+                        <div>
+                          <span style={{ fontWeight: '600', color: '#78350f' }}>Product Group:</span>{' '}
+                          <span style={{ color: '#111827', backgroundColor: '#fef3c7', padding: '2px 6px', borderRadius: '4px' }}>
+                            {elig.client_attributes.product_grid.product_group}
+                          </span>
+                        </div>
+                      )}
+                      {elig.client_attributes.product_grid?.product_type && (
+                        <div>
+                          <span style={{ fontWeight: '600', color: '#78350f' }}>Product Type:</span>{' '}
+                          <span style={{ color: '#111827', backgroundColor: '#fef3c7', padding: '2px 6px', borderRadius: '4px' }}>
+                            {elig.client_attributes.product_grid.product_type}
+                          </span>
+                        </div>
+                      )}
+                      {elig.client_attributes.product_grid?.product_status && (
+                        <div>
+                          <span style={{ fontWeight: '600', color: '#78350f' }}>Product Status:</span>{' '}
+                          <span style={{ color: '#111827', backgroundColor: '#fef3c7', padding: '2px 6px', borderRadius: '4px' }}>
+                            {elig.client_attributes.product_grid.product_status}
+                          </span>
+                        </div>
+                      )}
+                      {elig.client_attributes.product_grid?.bank_entity && (
+                        <div>
+                          <span style={{ fontWeight: '600', color: '#78350f' }}>Bank Entity:</span>{' '}
+                          <span style={{ color: '#111827', backgroundColor: '#fef3c7', padding: '2px 6px', borderRadius: '4px' }}>
+                            {elig.client_attributes.product_grid.bank_entity}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Matched Rules Section */}
                 {elig.matched_rules && elig.matched_rules.length > 0 && (
                   <div style={{ marginBottom: '16px' }}>
@@ -1305,6 +1365,123 @@ export default function ClientDetail() {
                 eligibilities={eligibilities}
                 dataQuality={dataQuality}
               />
+
+              {/* Client Attributes Section */}
+              {client?.client_attributes && (
+                <div style={{ marginTop: '24px', padding: '20px', backgroundColor: '#fefce8', borderRadius: '12px', border: '2px solid #fde047' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                    <span style={{ fontSize: '24px' }}>🏢</span>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: 0 }}>
+                      Client Attributes
+                    </h3>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      padding: '4px 10px',
+                      backgroundColor: '#fef3c7',
+                      color: '#92400e',
+                      borderRadius: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      Used for Rule Evaluation
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                    {/* Left Column: Basic Attributes */}
+                    <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #fde047' }}>
+                      <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#78350f', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>📊</span>
+                        Basic Attributes
+                      </h4>
+
+                      {client.client_attributes.account_type && (
+                        <div style={{ marginBottom: '10px' }}>
+                          <div style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
+                            Account Type
+                          </div>
+                          <div style={{ fontSize: '13px', fontWeight: '500', color: '#111827', padding: '6px 10px', backgroundColor: '#fef9c3', borderRadius: '6px', border: '1px solid #fde047' }}>
+                            {client.client_attributes.account_type}
+                          </div>
+                        </div>
+                      )}
+
+                      {client.client_attributes.booking_location && (
+                        <div style={{ marginBottom: '10px' }}>
+                          <div style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
+                            Booking Location
+                          </div>
+                          <div style={{ fontSize: '13px', fontWeight: '500', color: '#111827', padding: '6px 10px', backgroundColor: '#fef9c3', borderRadius: '6px', border: '1px solid #fde047' }}>
+                            {client.client_attributes.booking_location}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right Column: Product Grid */}
+                    {client.client_attributes.product_grid && (
+                      <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #fde047' }}>
+                        <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#78350f', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>🎯</span>
+                          Product Grid
+                        </h4>
+
+                        {client.client_attributes.product_grid.product_group && (
+                          <div style={{ marginBottom: '8px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280' }}>Group:</span>{' '}
+                            <span style={{ fontSize: '12px', color: '#111827' }}>{client.client_attributes.product_grid.product_group}</span>
+                          </div>
+                        )}
+
+                        {client.client_attributes.product_grid.product_category && (
+                          <div style={{ marginBottom: '8px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280' }}>Category:</span>{' '}
+                            <span style={{ fontSize: '12px', color: '#111827' }}>{client.client_attributes.product_grid.product_category}</span>
+                          </div>
+                        )}
+
+                        {client.client_attributes.product_grid.product_type && (
+                          <div style={{ marginBottom: '8px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280' }}>Type:</span>{' '}
+                            <span style={{ fontSize: '12px', color: '#111827' }}>{client.client_attributes.product_grid.product_type}</span>
+                          </div>
+                        )}
+
+                        {client.client_attributes.product_grid.product_status && (
+                          <div style={{ marginBottom: '8px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280' }}>Status:</span>{' '}
+                            <span style={{
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              backgroundColor: client.client_attributes.product_grid.product_status === 'approved' ? '#d1fae5' : '#fee2e2',
+                              color: client.client_attributes.product_grid.product_status === 'approved' ? '#065f46' : '#991b1b'
+                            }}>
+                              {client.client_attributes.product_grid.product_status}
+                            </span>
+                          </div>
+                        )}
+
+                        {client.client_attributes.product_grid.bank_entity && (
+                          <div>
+                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280' }}>Bank Entity:</span>{' '}
+                            <span style={{ fontSize: '12px', color: '#111827' }}>{client.client_attributes.product_grid.bank_entity}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ marginTop: '12px', padding: '10px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #fde047' }}>
+                    <p style={{ fontSize: '11px', color: '#78350f', margin: 0, fontStyle: 'italic' }}>
+                      💡 <strong>Note:</strong> These attributes are evaluated against classification rules to determine regime eligibility.
+                      View detailed rule evaluation in the "Regime Qualification" tab.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
