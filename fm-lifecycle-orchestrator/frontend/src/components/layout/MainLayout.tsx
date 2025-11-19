@@ -81,7 +81,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             margin: 0,
             color: '#f9fafb'
           }}>
-            FM Client Portal
+            Markets Client Portal
           </h1>
           <p style={{
             fontSize: '12px',
@@ -150,7 +150,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           fontSize: '11px',
           color: '#9ca3af'
         }}>
-          <p style={{ margin: 0 }}>© 2025 FM Lifecycle</p>
+          <p style={{ margin: 0 }}>© 2025 Markets Client Portal</p>
           <p style={{ margin: '4px 0 0 0' }}>Version 1.0.0</p>
         </div>
       </aside>
