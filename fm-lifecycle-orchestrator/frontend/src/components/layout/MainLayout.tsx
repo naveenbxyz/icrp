@@ -31,11 +31,16 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
   // Extract client ID from URL if on client detail page
   const getClientIdFromUrl = (): number | undefined => {
+    console.log('🔍 Current URL:', location.pathname)
     const match = location.pathname.match(/^\/clients\/(\d+)/)
-    return match ? parseInt(match[1], 10) : undefined
+    console.log('🔍 Regex match result:', match)
+    const id = match ? parseInt(match[1], 10) : undefined
+    console.log('🔍 Extracted clientId:', id)
+    return id
   }
 
   const clientId = getClientIdFromUrl()
+  console.log('🔍 MainLayout - Passing clientId to AIChatBubble:', clientId)
 
   const navItems: NavItem[] = [
     {
