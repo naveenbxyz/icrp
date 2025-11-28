@@ -16,6 +16,9 @@ export default function AIChatPanel({ clientId, clientName, onClose }: AIChatPan
   const [suggestions, setSuggestions] = useState<ChatSuggestion[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Debug: Log client context
+  console.log('🔍 AIChatPanel - Client Context:', { clientId, clientName });
+
   // Load suggestions on mount
   useEffect(() => {
     loadSuggestions();

@@ -29,6 +29,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
+  // Extract client ID from URL if on client detail page
+  const getClientIdFromUrl = (): number | undefined => {
+    const match = location.pathname.match(/^\/clients\/(\d+)/)
+    return match ? parseInt(match[1], 10) : undefined
+  }
+
+  const clientId = getClientIdFromUrl()
+
   const navItems: NavItem[] = [
     {
       path: '/',
@@ -212,8 +220,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
         {children}
       </main>
 
-      {/* AI Chat Bubble - Global */}
-      <AIChatBubble />
+      {/* AI Chat Bubble - Global (context-aware on client pages) */}
+      <AIChatBubble clientId={clientId} />
 
       {/* Mobile Styles */}
       <style>{`
