@@ -579,9 +579,14 @@ Respond in JSON format with keys: extracted_entities, validation_checks, recomme
             print(f"   - Client: {full_client_data.get('name', 'Unknown')}")
 
         # If LLM is enabled and client is initialized, use real LLM
-        if self.llm_enabled and self.client and full_client_data:
-            print("✅ Using LLM mode with RAG")
-            return self._chat_with_llm(message, full_client_data)
+        # Allow LLM mode even without client data (for general queries and testing)
+        if self.llm_enabled and self.client:
+            if full_client_data:
+                print("✅ Using LLM mode with RAG (client context)")
+                return self._chat_with_llm(message, full_client_data)
+            else:
+                print("✅ Using LLM mode without client context (general mode)")
+                return self._chat_with_llm_general(message)
 
         # Otherwise, use simulation mode
         print("⚠️ Using simulation mode")
@@ -668,6 +673,91 @@ CLIENT DATA CONTEXT:
             print(f"❌ LLM chat error: {str(e)}")
             # Fallback to simulation
             return self._chat_simulation(message, {"client_name": full_client_data.get('name', 'the client')})
+
+    def _chat_with_llm_general(
+        self,
+        message: str
+    ) -> Dict[str, Any]:
+        """
+        Chat using real LLM without client context (general mode).
+        Used for testing or general queries without specific client data.
+        """
+        try:
+            # Build general system prompt without client context
+            system_prompt = """You are an AI assistant for a Financial Markets Client Lifecycle Orchestrator system.
+You help users with questions about client onboarding, document validation, compliance risk assessment, and data quality analysis.
+
+Since no specific client context is available, provide general guidance and information about the system's capabilities.
+
+When answering:
+- Provide helpful, professional responses
+- Explain system features and capabilities when asked
+- Keep responses concise but informative (2-3 sentences usually)
+- If asked about a specific client, mention that you need client context to provide specific information
+"""
+
+            print(f"📤 Sending to LLM (general mode): {message[:50]}...")
+
+            # Call LLM (with or without streaming)
+            if self.llm_stream:
+                # Streaming mode - collect all chunks
+                stream = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": message}
+                    ],
+                    temperature=0.7,
+                    max_tokens=500,
+                    stream=True
+                )
+
+                # Collect streamed chunks
+                assistant_message = ""
+                for chunk in stream:
+                    if chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        assistant_message += content
+                        print(f"📥 Chunk: {content}", end='', flush=True)
+                print()  # New line after streaming
+            else:
+                # Non-streaming mode
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": message}
+                    ],
+                    temperature=0.7,
+                    max_tokens=500
+                )
+                assistant_message = response.choices[0].message.content
+
+            print(f"✅ LLM response received: {assistant_message[:100]}...")
+
+            # Generate general suggestions
+            suggestions = [
+                "What can you help me with?",
+                "How does the system work?",
+                "Tell me about AI validation"
+            ]
+
+            topic = self._determine_topic(message)
+
+            return {
+                "message": assistant_message,
+                "suggestions": suggestions,
+                "topic": topic,
+                "timestamp": datetime.now().isoformat(),
+                "source": "llm_general"
+            }
+
+        except Exception as e:
+            print(f"❌ LLM chat error (general mode): {str(e)}")
+            import traceback
+            traceback.print_exc()
+            # Fallback to simulation
+            return self._chat_simulation(message, {})
 
     def _generate_llm_suggestions(self, last_message: str, client_data: Dict[str, Any]) -> list[str]:
         """Generate contextual suggestions based on client data and last message."""
