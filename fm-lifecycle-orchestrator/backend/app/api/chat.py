@@ -125,12 +125,21 @@ def send_chat_message(
     Send a message to the AI chat assistant.
     Optionally include client_id for context-aware responses with RAG.
     """
+    print(f"📨 Chat request received:")
+    print(f"   - Message: {chat_request.message[:50]}...")
+    print(f"   - Client ID: {chat_request.client_id}")
+
     context = {}
     full_client_data = None
 
     # Fetch full client data if client_id is provided (for RAG)
     if chat_request.client_id:
+        print(f"🔍 Fetching full client data for client_id={chat_request.client_id}")
         full_client_data = fetch_full_client_data(chat_request.client_id, db)
+        if full_client_data:
+            print(f"✅ Client data fetched: {full_client_data.get('name', 'Unknown')}")
+        else:
+            print(f"❌ Client not found for id={chat_request.client_id}")
 
         if full_client_data:
             # Simple context for backward compatibility

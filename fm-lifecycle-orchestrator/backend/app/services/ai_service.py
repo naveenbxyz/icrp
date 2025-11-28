@@ -570,11 +570,21 @@ Respond in JSON format with keys: extracted_entities, validation_checks, recomme
         When LLM is enabled, uses RAG with full client context.
         Otherwise, uses pattern-matching canned responses.
         """
+        # Debug logging
+        print(f"🔍 chat_with_assistant called:")
+        print(f"   - LLM enabled: {self.llm_enabled}")
+        print(f"   - Client initialized: {self.client is not None}")
+        print(f"   - Full client data provided: {full_client_data is not None}")
+        if full_client_data:
+            print(f"   - Client: {full_client_data.get('name', 'Unknown')}")
+
         # If LLM is enabled and client is initialized, use real LLM
         if self.llm_enabled and self.client and full_client_data:
+            print("✅ Using LLM mode with RAG")
             return self._chat_with_llm(message, full_client_data)
 
         # Otherwise, use simulation mode
+        print("⚠️ Using simulation mode")
         return self._chat_simulation(message, context)
 
     def _chat_with_llm(
