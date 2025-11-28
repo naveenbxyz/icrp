@@ -43,6 +43,8 @@ export const clientsApi = {
   delete: (id: number) => fetchAPI(`/api/clients/${id}`, {
     method: 'DELETE',
   }),
+
+  getRiskScore: (id: number) => fetchAPI(`/api/clients/${id}/risk-score`),
 };
 
 // Onboarding
@@ -111,6 +113,20 @@ export const documentsApi = {
 
   getValidation: (documentId: number) => fetchAPI(`/api/documents/${documentId}/validation`),
 
+  // Enhanced AI validation with detailed entity extraction
+  enhancedValidate: (documentId: number) => fetchAPI(`/api/documents/${documentId}/enhanced-validate`, {
+    method: 'POST',
+  }),
+
+  getEnhancedValidation: (documentId: number) => fetchAPI(`/api/documents/${documentId}/enhanced-validation`),
+
+  // Verify AI-extracted data
+  verify: (documentId: number, data: { verified_by: string; notes?: string }) =>
+    fetchAPI(`/api/documents/${documentId}/verify`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   delete: (documentId: number) => fetchAPI(`/api/documents/${documentId}`, {
     method: 'DELETE',
   }),
@@ -140,4 +156,21 @@ export const integrationsApi = {
   getSXEntity: (entityId: string) => fetchAPI(`/api/integrations/sx/${entityId}`),
   getCXClient: (clientId: string) => fetchAPI(`/api/integrations/cx/${clientId}`),
   getEXWorkflow: (requestId: string) => fetchAPI(`/api/integrations/ex/${requestId}`),
+};
+
+// Chat
+export const chatApi = {
+  sendMessage: (message: string, clientId?: number) =>
+    fetchAPI('/api/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message, client_id: clientId }),
+    }),
+
+  getSuggestions: (clientId?: number) =>
+    fetchAPI(`/api/chat/suggestions${clientId ? `?client_id=${clientId}` : ''}`),
+};
+
+// Insights
+export const insightsApi = {
+  getSummary: () => fetchAPI('/api/insights/summary'),
 };

@@ -213,3 +213,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+fm-lifecycle-orchestrator/.DS_Store
+.DS_Store
+.DS_Store

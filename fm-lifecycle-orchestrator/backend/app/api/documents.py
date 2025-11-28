@@ -7,7 +7,12 @@ from datetime import datetime
 from ..database import get_db
 from ..models.document import Document, DocumentCategory, OCRStatus
 from ..models.client import Client
-from ..schemas.document import DocumentResponse, DocumentValidationResult
+from ..schemas.document import (
+    DocumentResponse,
+    DocumentValidationResult,
+    EnhancedValidationResult,
+    DocumentVerifyRequest
+)
 from ..services.ai_service import ai_service
 from ..config import settings
 
@@ -162,3 +167,134 @@ def get_validation_result(document_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No validation result available")
 
     return DocumentValidationResult(**document.ai_validation_result)
+
+
+@router.post("/documents/{document_id}/enhanced-validate", response_model=EnhancedValidationResult)
+async def enhanced_validate_document(document_id: int, db: Session = Depends(get_db)):
+    """
+    Enhanced AI validation with detailed entity extraction and confidence scores.
+    This endpoint simulates AI processing for demo purposes.
+    """
+    document = db.query(Document).filter(Document.id == document_id).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # Get client data
+    client = db.query(Client).filter(Client.id == document.client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    try:
+        # Update status to processing
+        document.ocr_status = OCRStatus.PROCESSING
+        db.commit()
+
+        # For demo purposes, use simulated text extraction
+        # In production, this would actually extract text from the document
+        if not document.extracted_text:
+            # Simulate extracted text for demo
+            extracted_text = f"""
+            CERTIFICATE OF INCORPORATION
+
+            Legal Entity Name: {client.name}
+            Jurisdiction: {client.jurisdiction or 'Not specified'}
+            Entity Type: {client.entity_type or 'Not specified'}
+
+            Document Type: Certificate of Incorporation
+            Issue Date: 2023-01-15
+            Document Reference: COI-2023-001234
+
+            This is to certify that {client.name} has been duly incorporated
+            under the laws of {client.jurisdiction or 'Not specified'} as a {client.entity_type or 'Not specified'}.
+
+            Authorized Signatory: John Smith, Company Secretary
+            Date of Issuance: January 15, 2023
+            """
+            document.extracted_text = extracted_text
+        else:
+            extracted_text = document.extracted_text
+
+        # Prepare client data for validation
+        client_data = {
+            "legal_entity_name": client.name,
+            "jurisdiction": client.jurisdiction or "Not specified",
+            "entity_type": client.entity_type or "Not specified"
+        }
+
+        # Enhanced validation with entity extraction
+        validation_result = ai_service.enhanced_validate_document(
+            extracted_text=extracted_text,
+            client_data=client_data,
+            document_category=document.document_category.value
+        )
+
+        # Store validation result
+        document.ai_validation_result = validation_result
+        document.ocr_status = OCRStatus.COMPLETED
+
+        db.commit()
+        db.refresh(document)
+
+        return EnhancedValidationResult(**validation_result)
+
+    except Exception as e:
+        import traceback
+        print(f"\n=== ENHANCED VALIDATION ERROR ===")
+        print(f"Error: {str(e)}")
+        print(f"Traceback:\n{traceback.format_exc()}")
+        print(f"=================================\n")
+        document.ocr_status = OCRStatus.FAILED
+        db.commit()
+        raise HTTPException(status_code=500, detail=f"Enhanced validation failed: {str(e)}")
+
+
+@router.get("/documents/{document_id}/enhanced-validation", response_model=EnhancedValidationResult)
+def get_enhanced_validation_result(document_id: int, db: Session = Depends(get_db)):
+    """Get enhanced AI validation result for a document"""
+    document = db.query(Document).filter(Document.id == document_id).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if not document.ai_validation_result:
+        raise HTTPException(status_code=404, detail="No validation result available")
+
+    return EnhancedValidationResult(**document.ai_validation_result)
+
+
+@router.post("/documents/{document_id}/verify")
+def verify_document(
+    document_id: int,
+    verify_request: DocumentVerifyRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Mark document as verified by human after reviewing AI extraction.
+    Updates document status to indicate human verification complete.
+    """
+    document = db.query(Document).filter(Document.id == document_id).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if not document.ai_validation_result:
+        raise HTTPException(status_code=400, detail="Document must be validated before verification")
+
+    # Update validation result to mark as verified
+    validation_result = document.ai_validation_result
+    validation_result["validation_status"] = "verified"
+    validation_result["verified_by"] = verify_request.verified_by
+    validation_result["verified_at"] = datetime.now().isoformat()
+    if verify_request.notes:
+        validation_result["verification_notes"] = verify_request.notes
+
+    document.ai_validation_result = validation_result
+    document.ocr_status = OCRStatus.COMPLETED
+
+    db.commit()
+    db.refresh(document)
+
+    return {
+        "message": "Document verified successfully",
+        "document_id": document_id,
+        "verified_by": verify_request.verified_by,
+        "validation_status": "verified"
+    }

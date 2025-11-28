@@ -136,6 +136,82 @@ export interface DocumentValidationResult {
   extracted_text_preview: string;
 }
 
+// Risk Scoring Types
+export interface RiskScore {
+  risk_score: number; // 0-100
+  risk_level: 'low' | 'medium' | 'high';
+  risk_color: string;
+  risk_factors: string[];
+  recommendations: string[];
+  breakdown: {
+    document_completeness: number;
+    data_quality: number;
+    jurisdiction: number;
+    entity_complexity: number;
+    onboarding_status: number;
+  };
+  calculated_at: string;
+}
+
+// AI Chat Types
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+  context?: {
+    client_id?: number;
+    client_name?: string;
+    topic?: string;
+  };
+}
+
+export interface ChatSuggestion {
+  id: string;
+  text: string;
+  category: 'document' | 'client' | 'onboarding' | 'compliance';
+}
+
+// Enhanced AI Validation Types
+export interface ExtractedEntity {
+  value: string | null;
+  confidence: number; // 0.0 to 1.0
+  matches_expected: boolean;
+  expected_value: string | null;
+  issues: string[];
+}
+
+
+export interface EnhancedValidationResult {
+  // Key extracted entities
+  legal_name: ExtractedEntity;
+  jurisdiction: ExtractedEntity;
+  document_type: ExtractedEntity;
+  issue_date: ExtractedEntity;
+  expiry_date: ExtractedEntity;
+  signatory: ExtractedEntity;
+  document_reference: ExtractedEntity;
+  entity_type: ExtractedEntity;
+
+  // Overall assessment
+  overall_confidence: number; // 0.0 to 1.0
+  validation_status: 'verified' | 'needs_review' | 'failed';
+  processing_time_ms: number;
+
+  // Issues and recommendations
+  issues: string[];
+  warnings: string[];
+  recommendations: string[];
+
+  // Raw data
+  extracted_text_preview: string;
+
+  // Optional verification data
+  verified_by?: string;
+  verified_at?: string;
+  verification_notes?: string;
+}
+
 export interface Task {
   id: number;
   client_id: number;

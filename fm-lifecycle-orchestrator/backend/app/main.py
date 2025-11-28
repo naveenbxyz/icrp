@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .database import engine, Base
-from .api import clients, onboarding, regulatory, documents, tasks, integrations, regimes, document_requirements
+from .api import clients, onboarding, regulatory, documents, tasks, integrations, regimes, document_requirements, chat, insights
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -31,6 +31,8 @@ app.include_router(tasks.router)
 app.include_router(integrations.router)
 app.include_router(regimes.router)
 app.include_router(document_requirements.router)
+app.include_router(chat.router)
+app.include_router(insights.router)
 
 
 @app.get("/")

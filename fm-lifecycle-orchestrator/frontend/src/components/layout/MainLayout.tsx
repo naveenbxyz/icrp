@@ -8,8 +8,11 @@ import {
   Settings,
   Menu,
   X,
-  Shield
+  Shield,
+  Sparkles,
+  TrendingUp
 } from 'lucide-react'
+import AIChatBubble from '../AIChatBubble'
 
 interface MainLayoutProps {
   children: ReactNode
@@ -36,6 +39,16 @@ export default function MainLayout({ children }: MainLayoutProps) {
       path: '/clients',
       label: 'Clients',
       icon: <Users size={20} />
+    },
+    {
+      path: '/ai-demo',
+      label: 'AI Demo',
+      icon: <Sparkles size={20} />
+    },
+    {
+      path: '/ai-insights',
+      label: 'AI Insights',
+      icon: <TrendingUp size={20} />
     },
     {
       path: '/tasks',
@@ -198,6 +211,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
       }}>
         {children}
       </main>
+
+      {/* AI Chat Bubble - Global */}
+      <AIChatBubble />
 
       {/* Mobile Styles */}
       <style>{`

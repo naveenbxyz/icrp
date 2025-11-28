@@ -352,7 +352,18 @@ def seed_data():
             entity_type="Corporate Pension Fund",
             onboarding_status=OnboardingStatus.IN_PROGRESS,
             assigned_rm="Michael Chen",
-            created_date=datetime.now() - timedelta(days=45)
+            created_date=datetime.now() - timedelta(days=45),
+            client_attributes={
+                "account_type": "trading_entity",
+                "booking_location": "US/NewYork",
+                "product_grid": {
+                    "product_group": "financial_markets",
+                    "product_category": "interest_rate",
+                    "product_type": "swap",
+                    "product_status": "approved",
+                    "bank_entity": "US/NewYork"
+                }
+            }
         )
         db.add(client2)
         db.flush()
@@ -500,7 +511,18 @@ def seed_data():
             entity_type="Credit Institution",
             onboarding_status=OnboardingStatus.IN_PROGRESS,
             assigned_rm="Yuki Tanaka",
-            created_date=datetime.now() - timedelta(days=60)
+            created_date=datetime.now() - timedelta(days=60),
+            client_attributes={
+                "account_type": "trading_entity",
+                "booking_location": "Japan/Tokyo",
+                "product_grid": {
+                    "product_group": "financial_markets",
+                    "product_category": "credit",
+                    "product_type": "swap",
+                    "product_status": "approved",
+                    "bank_entity": "Japan/Tokyo"
+                }
+            }
         )
         db.add(client5)
         db.flush()
@@ -561,7 +583,18 @@ def seed_data():
             entity_type="Family Office",
             onboarding_status=OnboardingStatus.IN_PROGRESS,
             assigned_rm="Anna Müller",
-            created_date=datetime.now() - timedelta(days=180)
+            created_date=datetime.now() - timedelta(days=180),
+            client_attributes={
+                "account_type": "subfund",
+                "booking_location": "Switzerland/Zurich",
+                "product_grid": {
+                    "product_group": "financial_markets",
+                    "product_category": "fx",
+                    "product_type": "option",
+                    "product_status": "pending_approval",
+                    "bank_entity": "Switzerland/Zurich"
+                }
+            }
         )
         db.add(client6)
         db.flush()
@@ -915,7 +948,18 @@ def seed_data():
             entity_type="Superannuation Fund",
             onboarding_status=OnboardingStatus.IN_PROGRESS,
             assigned_rm="Sophie Anderson",
-            created_date=datetime.now() - timedelta(days=25)
+            created_date=datetime.now() - timedelta(days=25),
+            client_attributes={
+                "account_type": "subfund",
+                "booking_location": "Australia/Sydney",
+                "product_grid": {
+                    "product_group": "financial_markets",
+                    "product_category": "interest_rate",
+                    "product_type": "forward",
+                    "product_status": "approved",
+                    "bank_entity": "Australia/Sydney"
+                }
+            }
         )
         db.add(client8)
         db.flush()
@@ -952,7 +996,18 @@ def seed_data():
             entity_type="SICAV",
             onboarding_status=OnboardingStatus.IN_PROGRESS,
             assigned_rm="Pierre Dubois",
-            created_date=datetime.now() - timedelta(days=40)
+            created_date=datetime.now() - timedelta(days=40),
+            client_attributes={
+                "account_type": "subfund",
+                "booking_location": "Luxembourg/Luxembourg",
+                "product_grid": {
+                    "product_group": "financial_markets",
+                    "product_category": "fx",
+                    "product_type": "swap",
+                    "product_status": "approved",
+                    "bank_entity": "Luxembourg/Luxembourg"
+                }
+            }
         )
         db.add(client9)
         db.flush()
@@ -1001,7 +1056,18 @@ def seed_data():
             entity_type="Insurance Company",
             onboarding_status=OnboardingStatus.INITIATED,
             assigned_rm="Robert MacDonald",
-            created_date=datetime.now() - timedelta(days=7)
+            created_date=datetime.now() - timedelta(days=7),
+            client_attributes={
+                "account_type": "trading_entity",
+                "booking_location": "Canada/Toronto",
+                "product_grid": {
+                    "product_group": "financial_markets",
+                    "product_category": "credit",
+                    "product_type": "forward",
+                    "product_status": "approved",
+                    "bank_entity": "Canada/Toronto"
+                }
+            }
         )
         db.add(client10)
         db.flush()

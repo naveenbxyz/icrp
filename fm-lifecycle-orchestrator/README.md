@@ -214,6 +214,50 @@ The system includes AI-powered document validation using OpenAI's API:
 
 **Mock Mode**: If OpenAI API key is not configured, the system uses mock validation results.
 
+## AI Chat with RAG Integration
+
+The system now includes an AI-powered chat assistant with RAG (Retrieval Augmented Generation) capabilities:
+
+### Features
+- 🤖 **OpenAI-Compatible API Support**: Works with OpenAI, Azure OpenAI, local LLMs, and more
+- 🔍 **RAG Implementation**: Sends complete client context (documents, tasks, classifications) to LLM
+- 💬 **Context-Aware Responses**: AI answers based on real client data from the database
+- 🔄 **Dual Mode**: Seamlessly switches between simulation and real LLM
+- 🛡️ **Automatic Fallback**: Falls back to simulation mode if LLM fails
+
+### Quick Start
+
+1. **Enable LLM Mode** - Edit `backend/.env`:
+   ```bash
+   LLM_ENABLED=true
+   LLM_API_KEY=your-api-key-here
+   LLM_API_ENDPOINT=https://api.openai.com/v1
+   LLM_MODEL=gpt-4o-mini
+   ```
+
+2. **Restart Backend**:
+   ```bash
+   cd backend
+   ./venv/bin/uvicorn app.main:app --reload
+   ```
+
+3. **Test in UI**:
+   - Navigate to any client detail page
+   - Click the purple AI chat bubble
+   - Ask questions like "What's the onboarding status?"
+
+### Documentation
+
+- 📖 **[QUICKSTART_LLM.md](QUICKSTART_LLM.md)** - 3-step setup guide
+- 📚 **[LLM_INTEGRATION_README.md](LLM_INTEGRATION_README.md)** - Complete documentation
+- 📋 **[LLM_IMPLEMENTATION_SUMMARY.md](LLM_IMPLEMENTATION_SUMMARY.md)** - Technical details
+
+### Supported Providers
+- OpenAI (GPT-4, GPT-4o, GPT-4o-mini)
+- Azure OpenAI
+- Local LLMs (Ollama, LM Studio)
+- Any OpenAI-compatible endpoint
+
 ## Technology Stack
 
 ### Backend
