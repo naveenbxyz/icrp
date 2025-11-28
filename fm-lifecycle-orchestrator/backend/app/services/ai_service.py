@@ -5,6 +5,7 @@ import json
 from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
 from openai import OpenAI
+import httpx
 # import PyPDF2
 # import pdfplumber
 # from PIL import Image
@@ -17,16 +18,25 @@ class AIService:
     def __init__(self):
         # Initialize OpenAI-compatible client
         self.llm_enabled = settings.llm_enabled
+        self.llm_stream = settings.llm_stream
         self.client = None
 
         if self.llm_enabled and settings.llm_api_key:
             try:
+                # Create custom HTTP client if SSL verification is disabled
+                http_client = None
+                if not settings.llm_verify_ssl:
+                    http_client = httpx.Client(verify=False)
+                    print("⚠️ SSL verification disabled for LLM API")
+
                 self.client = OpenAI(
                     api_key=settings.llm_api_key,
-                    base_url=settings.llm_api_endpoint
+                    base_url=settings.llm_api_endpoint,
+                    http_client=http_client
                 )
                 self.model = settings.llm_model
-                print(f"✅ LLM client initialized: {settings.llm_api_endpoint} | Model: {self.model}")
+                stream_mode = "streaming" if self.llm_stream else "non-streaming"
+                print(f"✅ LLM client initialized ({stream_mode}): {settings.llm_api_endpoint} | Model: {self.model}")
             except Exception as e:
                 print(f"⚠️ Failed to initialize LLM client: {str(e)}")
                 self.client = None
@@ -598,18 +608,37 @@ CLIENT DATA CONTEXT:
 {rag_context}
 """
 
-            # Call LLM
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": message}
-                ],
-                temperature=0.7,
-                max_tokens=500
-            )
+            # Call LLM (with or without streaming)
+            if self.llm_stream:
+                # Streaming mode - collect all chunks
+                stream = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": message}
+                    ],
+                    temperature=0.7,
+                    max_tokens=500,
+                    stream=True
+                )
 
-            assistant_message = response.choices[0].message.content
+                # Collect streamed chunks
+                assistant_message = ""
+                for chunk in stream:
+                    if chunk.choices[0].delta.content:
+                        assistant_message += chunk.choices[0].delta.content
+            else:
+                # Non-streaming mode
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": message}
+                    ],
+                    temperature=0.7,
+                    max_tokens=500
+                )
+                assistant_message = response.choices[0].message.content
 
             # Generate contextual suggestions based on the response
             suggestions = self._generate_llm_suggestions(message, full_client_data)

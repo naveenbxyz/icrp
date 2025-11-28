@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     llm_api_endpoint: str = "https://api.openai.com/v1"  # OpenAI-compatible endpoint
     llm_model: str = "gpt-4o-mini"
     llm_enabled: bool = False  # Set to True to use real LLM instead of simulation
+    llm_verify_ssl: bool = True  # Set to False to disable SSL verification (for internal/self-signed certs)
+    llm_stream: bool = True  # Set to True to use streaming responses
 
     # Legacy OpenAI fields (kept for backward compatibility)
     openai_api_key: str = ""

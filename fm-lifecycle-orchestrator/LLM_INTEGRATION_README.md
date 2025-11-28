@@ -31,6 +31,8 @@ LLM_ENABLED=true                                    # Set to true to enable LLM 
 LLM_API_KEY=your-api-key-here                       # Your API key
 LLM_API_ENDPOINT=https://api.openai.com/v1          # API endpoint (OpenAI-compatible)
 LLM_MODEL=gpt-4o-mini                               # Model name
+LLM_VERIFY_SSL=true                                 # Set to false for self-signed certs
+LLM_STREAM=true                                     # Enable streaming responses
 ```
 
 ### 2. Supported Endpoints
@@ -55,6 +57,15 @@ LLM_API_ENDPOINT=http://localhost:11434/v1
 LLM_MODEL=llama2
 ```
 
+**Custom Internal API (with SSL and streaming):**
+```bash
+LLM_API_ENDPOINT=https://your-org.com/xyz-chatbot/v1
+LLM_API_KEY=your-pat-token
+LLM_MODEL=XYZ
+LLM_VERIFY_SSL=false  # Disable SSL verification for self-signed certs
+LLM_STREAM=true       # Enable streaming
+```
+
 **Other OpenAI-compatible APIs:**
 - Together AI: `https://api.together.xyz/v1`
 - Anyscale: `https://api.endpoints.anyscale.com/v1`
@@ -69,6 +80,52 @@ LLM_MODEL=llama2
 
 **For other providers:**
 Follow their respective documentation for obtaining API keys.
+
+## Advanced Configuration Options
+
+### Streaming Responses
+
+The system supports streaming responses from the LLM API (similar to ChatGPT's typing effect):
+
+**Enable Streaming:**
+```bash
+LLM_STREAM=true
+```
+
+When enabled:
+- The backend collects chunks from the stream
+- Returns the complete response to the frontend
+- Reduces perceived latency for long responses
+- Works with any OpenAI-compatible streaming API
+
+**Disable Streaming:**
+```bash
+LLM_STREAM=false
+```
+
+Use non-streaming mode if your API doesn't support streaming or for simpler debugging.
+
+### SSL Verification
+
+For internal APIs or development environments with self-signed certificates:
+
+**Disable SSL Verification:**
+```bash
+LLM_VERIFY_SSL=false
+```
+
+**Important Security Notes:**
+- Only disable SSL verification for trusted internal APIs
+- Never disable for public APIs
+- Use proper certificates in production
+- The warning `⚠️ SSL verification disabled for LLM API` will appear in logs
+
+**Example for Internal API:**
+```bash
+LLM_API_ENDPOINT=https://internal-api.company.local/v1
+LLM_API_KEY=internal-token
+LLM_VERIFY_SSL=false  # Required for self-signed certs
+```
 
 ## How It Works
 

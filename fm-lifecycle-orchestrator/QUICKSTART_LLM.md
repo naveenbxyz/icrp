@@ -18,6 +18,12 @@ LLM_API_ENDPOINT=https://api.openai.com/v1
 
 # Choose model
 LLM_MODEL=gpt-4o-mini
+
+# SSL Verification (set to false for self-signed certs)
+LLM_VERIFY_SSL=true
+
+# Streaming (true for streaming responses)
+LLM_STREAM=true
 ```
 
 ### Step 2: Restart Backend
@@ -64,6 +70,15 @@ LLM_MODEL=gpt-4
 LLM_API_ENDPOINT=http://localhost:11434/v1
 LLM_API_KEY=not-needed
 LLM_MODEL=llama2
+```
+
+### Custom Internal API (with streaming)
+```bash
+LLM_API_ENDPOINT=https://your-org.com/xyz-chatbot/v1
+LLM_API_KEY=your-pat-token
+LLM_MODEL=XYZ
+LLM_VERIFY_SSL=false  # For self-signed certs
+LLM_STREAM=true       # Enable streaming
 ```
 
 ---
