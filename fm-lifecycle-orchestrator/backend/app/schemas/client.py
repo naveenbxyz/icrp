@@ -7,7 +7,7 @@ from ..models.client import OnboardingStatus
 class ClientBase(BaseModel):
     name: str
     legal_entity_id: str
-    jurisdiction: Optional[str] = None
+    country_of_incorporation: Optional[str] = None
     entity_type: Optional[str] = None
     assigned_rm: Optional[str] = None
 
@@ -18,7 +18,7 @@ class ClientCreate(ClientBase):
 
 class ClientUpdate(BaseModel):
     name: Optional[str] = None
-    jurisdiction: Optional[str] = None
+    country_of_incorporation: Optional[str] = None
     entity_type: Optional[str] = None
     onboarding_status: Optional[OnboardingStatus] = None
     assigned_rm: Optional[str] = None
@@ -32,6 +32,9 @@ class ClientResponse(ClientBase):
     cumulative_tat_hours: Optional[float] = None
     cumulative_tat_days: Optional[float] = None
     expected_completion_date: Optional[datetime] = None
+    cx_sync_status: Optional[str] = None
+    cx_sync_date: Optional[datetime] = None
+    cx_reference_id: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

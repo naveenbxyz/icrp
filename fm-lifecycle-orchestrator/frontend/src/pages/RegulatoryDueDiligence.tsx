@@ -245,7 +245,7 @@ export default function RegulatoryDueDiligence() {
                         {client.name}
                       </h3>
                       <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
-                        {client.jurisdiction} | {client.entity_type}
+                        {client.country_of_incorporation} | {client.entity_type}
                       </p>
                     </div>
                     <button

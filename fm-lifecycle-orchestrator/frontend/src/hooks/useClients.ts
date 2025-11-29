@@ -4,7 +4,7 @@ import { Client } from '../types'
 
 export function useClients(filters?: {
   status?: string
-  jurisdiction?: string
+  country_of_incorporation?: string
   search?: string
 }) {
   return useQuery<Client[]>({

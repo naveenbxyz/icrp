@@ -69,7 +69,7 @@ def seed_data():
         client1 = Client(
             name="Aldgate Capital Partners LLP",
             legal_entity_id="SX001234",
-            jurisdiction="United Kingdom",
+            country_of_incorporation="United Kingdom",
             entity_type="Limited Liability Partnership",
             onboarding_status=OnboardingStatus.COMPLETED,
             assigned_rm="Sarah Johnson",
@@ -77,6 +77,7 @@ def seed_data():
             client_attributes={
                 "account_type": "subfund",
                 "booking_location": "UK/London",
+                "product": "FX Forwards",
                 "product_grid": {
                     "product_group": "financial_markets",
                     "product_category": "fx",
@@ -348,7 +349,7 @@ def seed_data():
         client2 = Client(
             name="American Retirement Trust Fund",
             legal_entity_id="SX002456",
-            jurisdiction="United States",
+            country_of_incorporation="United States",
             entity_type="Corporate Pension Fund",
             onboarding_status=OnboardingStatus.IN_PROGRESS,
             assigned_rm="Michael Chen",
@@ -356,6 +357,7 @@ def seed_data():
             client_attributes={
                 "account_type": "trading_entity",
                 "booking_location": "US/NewYork",
+                "product": "Interest Rate Swaps",
                 "product_grid": {
                     "product_group": "financial_markets",
                     "product_category": "interest_rate",
@@ -408,7 +410,7 @@ def seed_data():
         client3 = Client(
             name="Frankfurt Asset Management GmbH",
             legal_entity_id="SX003789",
-            jurisdiction="Germany",
+            country_of_incorporation="Germany",
             entity_type="Asset Management Company",
             onboarding_status=OnboardingStatus.BLOCKED,
             assigned_rm="Emma Schmidt",
@@ -475,7 +477,7 @@ def seed_data():
         client4 = Client(
             name="Cayman Global Investment Fund I Ltd",
             legal_entity_id="SX004123",
-            jurisdiction="Cayman Islands",
+            country_of_incorporation="Cayman Islands",
             entity_type="Special Purpose Vehicle",
             onboarding_status=OnboardingStatus.INITIATED,
             assigned_rm="James Liu",
@@ -507,7 +509,7 @@ def seed_data():
         client5 = Client(
             name="Tokyo International Bank Ltd",
             legal_entity_id="SX005678",
-            jurisdiction="Japan",
+            country_of_incorporation="Japan",
             entity_type="Credit Institution",
             onboarding_status=OnboardingStatus.IN_PROGRESS,
             assigned_rm="Yuki Tanaka",
@@ -579,7 +581,7 @@ def seed_data():
         client6 = Client(
             name="Zurich Family Office AG",
             legal_entity_id="SX006890",
-            jurisdiction="Switzerland",
+            country_of_incorporation="Switzerland",
             entity_type="Family Office",
             onboarding_status=OnboardingStatus.IN_PROGRESS,
             assigned_rm="Anna Müller",
@@ -649,7 +651,7 @@ def seed_data():
         client7 = Client(
             name="Singapore Strategic Investment Fund",
             legal_entity_id="SX007234",
-            jurisdiction="Singapore",
+            country_of_incorporation="Singapore",
             entity_type="Sovereign Wealth Fund",
             onboarding_status=OnboardingStatus.COMPLETED,
             assigned_rm="David Wong",
@@ -944,7 +946,7 @@ def seed_data():
         client8 = Client(
             name="Melbourne Retirement Super Fund",
             legal_entity_id="SX008567",
-            jurisdiction="Australia",
+            country_of_incorporation="Australia",
             entity_type="Superannuation Fund",
             onboarding_status=OnboardingStatus.IN_PROGRESS,
             assigned_rm="Sophie Anderson",
@@ -992,7 +994,7 @@ def seed_data():
         client9 = Client(
             name="European Growth Fund SICAV",
             legal_entity_id="SX009876",
-            jurisdiction="Luxembourg",
+            country_of_incorporation="Luxembourg",
             entity_type="SICAV",
             onboarding_status=OnboardingStatus.IN_PROGRESS,
             assigned_rm="Pierre Dubois",
@@ -1052,7 +1054,7 @@ def seed_data():
         client10 = Client(
             name="Toronto Life & General Insurance Co",
             legal_entity_id="SX010345",
-            jurisdiction="Canada",
+            country_of_incorporation="Canada",
             entity_type="Insurance Company",
             onboarding_status=OnboardingStatus.INITIATED,
             assigned_rm="Robert MacDonald",
@@ -1216,7 +1218,7 @@ def seed_data():
         client11 = Client(
             name="Mumbai Financial Services Pvt Ltd",
             legal_entity_id="SX011111",
-            jurisdiction="India",
+            country_of_incorporation="India",
             entity_type="Private Limited Company",
             onboarding_status=OnboardingStatus.IN_PROGRESS,
             assigned_rm="Rajesh Kumar",
@@ -1251,7 +1253,7 @@ def seed_data():
         client12 = Client(
             name="Delhi Investment Fund",
             legal_entity_id="SX012222",
-            jurisdiction="India",
+            country_of_incorporation="India",
             entity_type="Investment Fund",
             onboarding_status=OnboardingStatus.IN_PROGRESS,
             assigned_rm="Priya Sharma",
@@ -1286,7 +1288,7 @@ def seed_data():
         client13 = Client(
             name="Bangalore Private Wealth Management",
             legal_entity_id="SX013333",
-            jurisdiction="India",
+            country_of_incorporation="India",
             entity_type="Private Banking",
             onboarding_status=OnboardingStatus.BLOCKED,
             assigned_rm="Anil Verma",
@@ -1311,6 +1313,41 @@ def seed_data():
              "started_date": datetime.now() - timedelta(days=10), "completed_date": datetime.now() - timedelta(days=8)},
             {"name": StageName.REG_CLASSIFICATION, "status": StageStatus.BLOCKED, "assigned_team": "Compliance",
              "started_date": datetime.now() - timedelta(days=8), "notes": "Private banking accounts are out of scope for RBI regime"},
+            {"name": StageName.FM_ACCOUNT_REQUEST, "status": StageStatus.NOT_STARTED, "assigned_team": "FM Operations"},
+            {"name": StageName.STATIC_DATA_ENRICHMENT, "status": StageStatus.NOT_STARTED, "assigned_team": "FM Ops - Data"},
+            {"name": StageName.SSI_VALIDATION, "status": StageStatus.NOT_STARTED, "assigned_team": "SSI Team"},
+            {"name": StageName.VALUATION_SETUP, "status": StageStatus.NOT_STARTED, "assigned_team": "Valuation Team"}
+        ])
+
+        # Client 14: Singapore Trading Corp - Early Stage (for CX Product Approval Demo)
+        client14 = Client(
+            name="Pacific Rim Trading Corporation",
+            legal_entity_id="SX009876",
+            country_of_incorporation="Singapore",
+            entity_type="Private Limited Company",
+            onboarding_status=OnboardingStatus.IN_PROGRESS,
+            assigned_rm="Michael Chen",
+            created_date=datetime.now() - timedelta(days=3),
+            client_attributes={
+                "account_type": "subfund",
+                "booking_location": "Singapore/Singapore",
+                "product": "FX Derivatives",
+                "product_grid": {
+                    "product_group": "financial_markets",
+                    "product_category": "fx",
+                    "product_type": "forward",
+                    "product_status": "pending_approval",  # NOT YET APPROVED - awaiting CX approval
+                    "bank_entity": "Singapore/Singapore"
+                }
+            }
+        )
+        db.add(client14)
+        db.flush()
+
+        create_onboarding_stages(db, client14.id, [
+            {"name": StageName.LEGAL_ENTITY_SETUP, "status": StageStatus.IN_PROGRESS, "assigned_team": "Entity Management",
+             "started_date": datetime.now() - timedelta(days=3), "notes": "Awaiting CX product approval before proceeding to classification"},
+            {"name": StageName.REG_CLASSIFICATION, "status": StageStatus.NOT_STARTED, "assigned_team": "Compliance"},
             {"name": StageName.FM_ACCOUNT_REQUEST, "status": StageStatus.NOT_STARTED, "assigned_team": "FM Operations"},
             {"name": StageName.STATIC_DATA_ENRICHMENT, "status": StageStatus.NOT_STARTED, "assigned_team": "FM Ops - Data"},
             {"name": StageName.SSI_VALIDATION, "status": StageStatus.NOT_STARTED, "assigned_team": "SSI Team"},

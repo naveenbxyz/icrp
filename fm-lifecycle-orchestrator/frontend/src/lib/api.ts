@@ -18,10 +18,10 @@ async function fetchAPI(endpoint: string, options?: RequestInit) {
 
 // Clients
 export const clientsApi = {
-  getAll: (params?: { status?: string; jurisdiction?: string; search?: string }) => {
+  getAll: (params?: { status?: string; country_of_incorporation?: string; search?: string }) => {
     const searchParams = new URLSearchParams();
     if (params?.status) searchParams.append('status', params.status);
-    if (params?.jurisdiction) searchParams.append('jurisdiction', params.jurisdiction);
+    if (params?.country_of_incorporation) searchParams.append('country_of_incorporation', params.country_of_incorporation);
     if (params?.search) searchParams.append('search', params.search);
 
     const query = searchParams.toString();

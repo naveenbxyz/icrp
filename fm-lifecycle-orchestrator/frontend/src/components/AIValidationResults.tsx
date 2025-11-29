@@ -346,7 +346,7 @@ export default function AIValidationResults({
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {renderEntityRow('Legal Name', validation.legal_name)}
-              {renderEntityRow('Jurisdiction', validation.jurisdiction)}
+              {renderEntityRow('Country of Incorporation', validation.country_of_incorporation)}
               {renderEntityRow('Entity Type', validation.entity_type)}
               {renderEntityRow('Document Type', validation.document_type)}
               {renderEntityRow('Issue Date', validation.issue_date)}

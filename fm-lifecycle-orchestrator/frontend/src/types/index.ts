@@ -69,7 +69,7 @@ export interface Client {
   id: number;
   name: string;
   legal_entity_id: string;
-  jurisdiction: string;
+  country_of_incorporation: string;
   entity_type: string;
   onboarding_status: OnboardingStatus;
   created_date: string;
@@ -81,6 +81,10 @@ export interface Client {
   cumulative_tat_hours?: number | null;
   cumulative_tat_days?: number | null;
   expected_completion_date?: string | null;
+  cx_sync_status?: string | null;
+  cx_sync_date?: string | null;
+  cx_reference_id?: string | null;
+  client_attributes?: ClientAttributes;
 }
 
 export interface OnboardingStage {
@@ -185,7 +189,7 @@ export interface ExtractedEntity {
 export interface EnhancedValidationResult {
   // Key extracted entities
   legal_name: ExtractedEntity;
-  jurisdiction: ExtractedEntity;
+  country_of_incorporation: ExtractedEntity;
   document_type: ExtractedEntity;
   issue_date: ExtractedEntity;
   expiry_date: ExtractedEntity;
@@ -367,11 +371,13 @@ export interface DataQualityResult {
 export interface ClientAttributes {
   account_type?: string;
   booking_location?: string;
+  product?: string;
   product_grid?: {
     product_group?: string;
     product_category?: string;
     product_type?: string;
     product_status?: string;
+    approval_date?: string;
     bank_entity?: string;
   };
   [key: string]: any;

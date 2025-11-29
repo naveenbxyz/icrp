@@ -878,6 +878,42 @@ export default function ClientDetail() {
     }
   }
 
+  const handleSimulateCXApproval = async () => {
+    if (!client) return
+
+    setLoading(true)
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/clients/${client.id}/simulate-cx-approval`,
+        { method: 'POST' }
+      )
+      const result = await response.json()
+
+      // Show success notification
+      alert(`CX Product Approval Simulated!\n\n` +
+            `Product Approved: ${result.product_approved}\n` +
+            `Regimes Evaluated: ${result.regimes_evaluated}\n` +
+            `Eligible Regimes: ${result.eligible_regimes.length}`)
+
+      // Refresh all client data
+      if (clientId) {
+        const [clientData, stagesData, eligData] = await Promise.all([
+          clientsApi.getById(Number(clientId)),
+          onboardingApi.getStages(Number(clientId)),
+          fetch(`http://localhost:8000/api/clients/${clientId}/regime-eligibility`).then(r => r.json())
+        ])
+        setClient(clientData)
+        setStages(stagesData)
+        setEligibilities(eligData)
+      }
+    } catch (error) {
+      console.error('Failed to simulate CX approval:', error)
+      alert('Failed to simulate CX product approval')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return { bg: '#d1fae5', text: '#065f46' }
@@ -1101,9 +1137,46 @@ export default function ClientDetail() {
         )}
         <div style={{ display: 'flex', gap: '32px', fontSize: '14px', color: '#6b7280', flexWrap: 'wrap' }}>
           <span><strong style={{ color: '#374151' }}>Entity ID:</strong> {client.legal_entity_id}</span>
-          <span><strong style={{ color: '#374151' }}>Jurisdiction:</strong> {client.jurisdiction}</span>
+          <span><strong style={{ color: '#374151' }}>Country of Incorporation:</strong> {client.country_of_incorporation}</span>
           <span><strong style={{ color: '#374151' }}>Entity Type:</strong> {client.entity_type}</span>
           <span><strong style={{ color: '#374151' }}>RM:</strong> {client.assigned_rm}</span>
+        </div>
+
+        {/* Key Classification Attributes - Prominent Display */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '16px',
+          marginTop: '20px',
+          padding: '16px',
+          backgroundColor: '#f9fafb',
+          borderRadius: '8px',
+          border: '1px solid #e5e7eb'
+        }}>
+          <div>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px', fontWeight: '500' }}>
+              Product
+            </div>
+            <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+              {client.client_attributes?.product || 'Not specified'}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px', fontWeight: '500' }}>
+              Booking Location
+            </div>
+            <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+              {client.client_attributes?.booking_location || 'Not specified'}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px', fontWeight: '500' }}>
+              Country of Incorporation
+            </div>
+            <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+              {client.country_of_incorporation || 'Not specified'}
+            </div>
+          </div>
         </div>
       </header>
 
@@ -1309,6 +1382,49 @@ export default function ClientDetail() {
                   })}
                 </div>
               </div>
+
+              {/* CX Product Approval Button - Show if Legal Entity Setup is in progress */}
+              {client && client.onboarding_status === 'in_progress' &&
+               stages.some(s => s.stage_name === 'Legal Entity Setup' && s.status === 'in_progress') && (
+                <div style={{
+                  marginTop: '24px',
+                  padding: '20px',
+                  backgroundColor: '#eff6ff',
+                  borderRadius: '8px',
+                  border: '1px solid #3b82f6'
+                }}>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e40af', marginBottom: '8px' }}>
+                    CX Product Approval Required
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#1e40af', marginBottom: '12px' }}>
+                    Simulate product approval from CX to trigger regulatory classification across {regimes.length}+ regimes
+                  </div>
+                  <button
+                    onClick={handleSimulateCXApproval}
+                    disabled={loading}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: '#3b82f6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                      opacity: loading ? 0.6 : 1,
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!loading) e.currentTarget.style.backgroundColor = '#2563eb'
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!loading) e.currentTarget.style.backgroundColor = '#3b82f6'
+                    }}
+                  >
+                    {loading ? 'Processing...' : '▶ Simulate CX Product Approval'}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Regulatory Overview Section - Two Lanes */}

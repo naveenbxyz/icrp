@@ -19,7 +19,7 @@ class Client(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     legal_entity_id = Column(String, unique=True, index=True)
-    jurisdiction = Column(String)
+    country_of_incorporation = Column(String)
     entity_type = Column(String)
     onboarding_status = Column(SQLEnum(OnboardingStatus), default=OnboardingStatus.INITIATED)
     created_date = Column(DateTime, default=datetime.utcnow)
@@ -32,6 +32,11 @@ class Client(Base):
     # TAT tracking fields
     cumulative_tat_hours = Column(Float, nullable=True)  # Total end-to-end onboarding TAT
     expected_completion_date = Column(DateTime, nullable=True)  # Expected completion based on target TATs
+
+    # CX Integration tracking
+    cx_sync_status = Column(String, nullable=True)  # 'pending', 'synced', 'failed'
+    cx_sync_date = Column(DateTime, nullable=True)
+    cx_reference_id = Column(String, nullable=True)
 
     # Relationships
     onboarding_stages = relationship("OnboardingStage", back_populates="client", cascade="all, delete-orphan")

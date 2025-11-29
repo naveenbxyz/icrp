@@ -5,7 +5,7 @@ interface Client {
   id: number
   name: string
   legal_entity_id: string
-  jurisdiction: string
+  country_of_incorporation: string
   entity_type: string
   onboarding_status: string
   assigned_rm: string
@@ -67,7 +67,7 @@ export default function Dashboard() {
       result = result.filter(client =>
         client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         client.legal_entity_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.jurisdiction.toLowerCase().includes(searchTerm.toLowerCase())
+        client.country_of_incorporation.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
@@ -280,7 +280,7 @@ export default function Dashboard() {
                 <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '18px', color: '#9ca3af' }}>🔍</span>
                 <input
                   type="text"
-                  placeholder="Search by client name, entity ID, or jurisdiction..."
+                  placeholder="Search by client name, entity ID, or country..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   style={{
@@ -485,7 +485,7 @@ export default function Dashboard() {
                           {client.legal_entity_id}
                         </div>
                       </div>
-                      <div onClick={() => toggleClient(client.id)} style={{ fontSize: '14px', color: '#374151' }}>{client.jurisdiction}</div>
+                      <div onClick={() => toggleClient(client.id)} style={{ fontSize: '14px', color: '#374151' }}>{client.country_of_incorporation}</div>
                       <div onClick={() => toggleClient(client.id)} style={{ fontSize: '13px', color: '#6b7280' }}>{client.entity_type}</div>
                       <div onClick={() => toggleClient(client.id)}>
                         <span style={{

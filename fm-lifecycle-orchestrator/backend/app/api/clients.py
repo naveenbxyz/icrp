@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/clients", tags=["clients"])
 @router.get("", response_model=List[ClientListResponse])
 def list_clients(
     status: Optional[OnboardingStatus] = None,
-    jurisdiction: Optional[str] = None,
+    country_of_incorporation: Optional[str] = None,
     search: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
@@ -24,8 +24,8 @@ def list_clients(
 
     if status:
         query = query.filter(Client.onboarding_status == status)
-    if jurisdiction:
-        query = query.filter(Client.jurisdiction.ilike(f"%{jurisdiction}%"))
+    if country_of_incorporation:
+        query = query.filter(Client.country_of_incorporation.ilike(f"%{country_of_incorporation}%"))
     if search:
         query = query.filter(
             (Client.name.ilike(f"%{search}%")) |
@@ -166,7 +166,7 @@ def get_client_risk_score(client_id: int, db: Session = Depends(get_db)) -> Dict
     # Prepare client data
     client_data = {
         "name": client.name,
-        "jurisdiction": client.jurisdiction or "Unknown",
+        "country_of_incorporation": client.country_of_incorporation or "Unknown",
         "entity_type": client.entity_type or "Unknown",
         "onboarding_status": client.onboarding_status.value if client.onboarding_status else "in_progress"
     }
@@ -197,7 +197,7 @@ def check_client_consistency(client_id: int, db: Session = Depends(get_db)) -> D
     # Prepare client data
     client_data = {
         "name": client.name,
-        "jurisdiction": client.jurisdiction or "Unknown",
+        "country_of_incorporation": client.country_of_incorporation or "Unknown",
         "entity_type": client.entity_type or "Unknown"
     }
 

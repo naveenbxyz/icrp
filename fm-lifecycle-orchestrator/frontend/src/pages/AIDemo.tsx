@@ -263,7 +263,7 @@ export default function AIDemo() {
           {
             icon: '🔍',
             title: 'Smart Extraction',
-            description: 'Automatically extracts legal names, dates, and jurisdictions'
+            description: 'Automatically extracts legal names, dates, and country of incorporation'
           },
           {
             icon: '📊',
