@@ -517,6 +517,7 @@ def seed_data():
             client_attributes={
                 "account_type": "trading_entity",
                 "booking_location": "Japan/Tokyo",
+                "product": "Credit Default Swaps",
                 "product_grid": {
                     "product_group": "financial_markets",
                     "product_category": "credit",
@@ -589,6 +590,7 @@ def seed_data():
             client_attributes={
                 "account_type": "subfund",
                 "booking_location": "Switzerland/Zurich",
+                "product": "FX Options",
                 "product_grid": {
                     "product_group": "financial_markets",
                     "product_category": "fx",
@@ -659,6 +661,7 @@ def seed_data():
             client_attributes={
                 "account_type": "trading_entity",
                 "booking_location": "Singapore/DBS",
+                "product": "Interest Rate Swaps",
                 "product_grid": {
                     "product_group": "financial_markets",
                     "product_category": "interest_rate",
@@ -954,6 +957,7 @@ def seed_data():
             client_attributes={
                 "account_type": "subfund",
                 "booking_location": "Australia/Sydney",
+                "product": "Interest Rate Forwards",
                 "product_grid": {
                     "product_group": "financial_markets",
                     "product_category": "interest_rate",
@@ -1002,6 +1006,7 @@ def seed_data():
             client_attributes={
                 "account_type": "subfund",
                 "booking_location": "Luxembourg/Luxembourg",
+                "product": "FX Swaps",
                 "product_grid": {
                     "product_group": "financial_markets",
                     "product_category": "fx",
@@ -1062,6 +1067,7 @@ def seed_data():
             client_attributes={
                 "account_type": "trading_entity",
                 "booking_location": "Canada/Toronto",
+                "product": "Credit Forwards",
                 "product_grid": {
                     "product_group": "financial_markets",
                     "product_category": "credit",
@@ -1226,6 +1232,7 @@ def seed_data():
             client_attributes={
                 "account_type": "trading_entity",
                 "booking_location": "India/HDFC",
+                "product": "FX Forwards",
                 "product_grid": {
                     "product_group": "financial_markets",
                     "product_category": "fx",
@@ -1261,6 +1268,7 @@ def seed_data():
             client_attributes={
                 "account_type": "subfund",
                 "booking_location": "India/ICICI",
+                "product": "Interest Rate Swaps",
                 "product_grid": {
                     "product_group": "financial_markets",
                     "product_category": "interest_rate",
@@ -1296,6 +1304,7 @@ def seed_data():
             client_attributes={
                 "account_type": "private_banking",  # Out of scope!
                 "booking_location": "India/SBI",
+                "product": "FX Forwards",
                 "product_grid": {
                     "product_group": "financial_markets",
                     "product_category": "fx",
