@@ -83,10 +83,13 @@ def fetch_full_client_data(client_id: int, db: Session) -> dict:
             "id": stage.id,
             "stage_name": stage.stage_name.value if stage.stage_name else None,
             "status": stage.status.value if stage.status else None,
-            "owner": stage.owner,
+            "assigned_team": stage.assigned_team,
+            "order": stage.order,
             "tat_hours": stage.tat_hours,
-            "start_date": stage.start_date.isoformat() if stage.start_date else None,
-            "end_date": stage.end_date.isoformat() if stage.end_date else None
+            "target_tat_hours": stage.target_tat_hours,
+            "started_date": stage.started_date.isoformat() if stage.started_date else None,
+            "completed_date": stage.completed_date.isoformat() if stage.completed_date else None,
+            "notes": stage.notes
         }
         client_data["onboarding_stages"].append(stage_data)
 
@@ -94,11 +97,14 @@ def fetch_full_client_data(client_id: int, db: Session) -> dict:
     for classification in client.regulatory_classifications:
         class_data = {
             "id": classification.id,
-            "regime_name": classification.regime_name.value if classification.regime_name else None,
+            "regime": classification.regime,
+            "framework": classification.framework.value if classification.framework else None,
             "classification": classification.classification,
-            "confidence_score": classification.confidence_score,
-            "status": classification.status.value if classification.status else None,
-            "classification_date": classification.classification_date.isoformat() if classification.classification_date else None
+            "data_quality_score": classification.data_quality_score,
+            "validation_status": classification.validation_status.value if classification.validation_status else None,
+            "classification_date": classification.classification_date.isoformat() if classification.classification_date else None,
+            "last_review_date": classification.last_review_date.isoformat() if classification.last_review_date else None,
+            "validation_notes": classification.validation_notes
         }
         client_data["regulatory_classifications"].append(class_data)
 
@@ -107,10 +113,14 @@ def fetch_full_client_data(client_id: int, db: Session) -> dict:
         task_data = {
             "id": task.id,
             "title": task.title,
+            "description": task.description,
             "status": task.status.value if task.status else None,
-            "priority": task.priority.value if task.priority else None,
+            "task_type": task.task_type.value if task.task_type else None,
+            "assigned_to": task.assigned_to,
+            "assigned_team": task.assigned_team,
             "due_date": task.due_date.isoformat() if task.due_date else None,
-            "description": task.description
+            "completed_date": task.completed_date.isoformat() if task.completed_date else None,
+            "created_date": task.created_date.isoformat() if task.created_date else None
         }
         client_data["tasks"].append(task_data)
 
