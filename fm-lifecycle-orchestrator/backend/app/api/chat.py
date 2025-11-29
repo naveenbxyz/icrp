@@ -67,11 +67,12 @@ def fetch_full_client_data(client_id: int, db: Session) -> dict:
     for doc in client.documents:
         doc_data = {
             "id": doc.id,
-            "category": doc.category.value if doc.category else None,
-            "status": doc.status.value if doc.status else None,
+            "document_category": doc.document_category.value if doc.document_category else None,
             "ocr_status": doc.ocr_status.value if doc.ocr_status else None,
-            "file_name": doc.file_name,
-            "uploaded_at": doc.uploaded_at.isoformat() if doc.uploaded_at else None,
+            "filename": doc.filename,
+            "file_type": doc.file_type,
+            "upload_date": doc.upload_date.isoformat() if doc.upload_date else None,
+            "uploaded_by": doc.uploaded_by,
             "ai_validation_result": doc.ai_validation_result
         }
         client_data["documents"].append(doc_data)
