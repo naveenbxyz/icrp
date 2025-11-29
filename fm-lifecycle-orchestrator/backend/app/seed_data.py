@@ -1322,7 +1322,7 @@ def seed_data():
         # Client 14: Singapore Trading Corp - Early Stage (for CX Product Approval Demo)
         client14 = Client(
             name="Pacific Rim Trading Corporation",
-            legal_entity_id="SX009876",
+            legal_entity_id="SX009900",
             country_of_incorporation="Singapore",
             entity_type="Private Limited Company",
             onboarding_status=OnboardingStatus.IN_PROGRESS,
