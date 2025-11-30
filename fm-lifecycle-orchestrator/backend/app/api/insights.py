@@ -23,7 +23,7 @@ def get_insights_summary(db: Session = Depends(get_db)) -> Dict[str, Any]:
             "id": client.id,
             "name": client.name,
             "onboarding_status": client.onboarding_status.value if client.onboarding_status else "unknown",
-            "jurisdiction": client.jurisdiction,
+            "jurisdiction": client.country_of_incorporation,
             "entity_type": client.entity_type
         }
         for client in clients

@@ -6,6 +6,7 @@ from .task import Task
 from .classification_rule import ClassificationRule
 from .regime_eligibility import RegimeEligibility
 from .mandatory_evidence import MandatoryEvidence
+from .rule_version_history import RuleVersionHistory
 
 __all__ = [
     "Client",
@@ -15,5 +16,6 @@ __all__ = [
     "Task",
     "ClassificationRule",
     "RegimeEligibility",
-    "MandatoryEvidence"
+    "MandatoryEvidence",
+    "RuleVersionHistory"
 ]

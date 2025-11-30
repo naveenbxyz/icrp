@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, JSON, Text
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from ..database import Base
 
@@ -21,3 +22,6 @@ class ClassificationRule(Base):
     created_date = Column(DateTime, default=datetime.utcnow)
     updated_date = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_by = Column(String, nullable=True)
+
+    # Relationships
+    version_history = relationship("RuleVersionHistory", back_populates="classification_rule")

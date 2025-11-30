@@ -37,3 +37,14 @@ class TaskResponse(TaskBase):
     created_date: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TaskWithClientResponse(TaskResponse):
+    """Extended task response with client information for cross-client task views"""
+    client_name: str
+    client_legal_entity_id: str
+    client_country: str
+    is_overdue: bool
+    days_until_due: Optional[int] = None
+
+    model_config = ConfigDict(from_attributes=True)

@@ -28,6 +28,33 @@ class SXClient:
         self.entities[entity_id] = entity_data
         return {"entity_id": entity_id, "status": "created", **entity_data}
 
+    def get_entity_documents(self, entity_id: str) -> list[Dict[str, Any]]:
+        """Get available documents for a legal entity from SX"""
+        # Mock document data
+        return [
+            {
+                "document_type": "registration_certificate",
+                "document_name": f"Registration Certificate - {entity_id}",
+                "document_url": f"sx://documents/{entity_id}/registration_cert.pdf",
+                "last_updated": "2024-01-15",
+                "file_size": "245KB"
+            },
+            {
+                "document_type": "articles_of_incorporation",
+                "document_name": f"Articles of Incorporation - {entity_id}",
+                "document_url": f"sx://documents/{entity_id}/articles.pdf",
+                "last_updated": "2024-01-10",
+                "file_size": "180KB"
+            },
+            {
+                "document_type": "board_resolution",
+                "document_name": f"Board Resolution - {entity_id}",
+                "document_url": f"sx://documents/{entity_id}/board_resolution.pdf",
+                "last_updated": "2024-02-20",
+                "file_size": "95KB"
+            }
+        ]
+
 
 # Singleton instance
 sx_client = SXClient()

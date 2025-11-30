@@ -4,6 +4,7 @@ from typing import List, Optional
 import os
 import shutil
 from datetime import datetime
+from pydantic import BaseModel
 from ..database import get_db
 from ..models.document import Document, DocumentCategory, OCRStatus
 from ..models.client import Client
@@ -14,7 +15,16 @@ from ..schemas.document import (
     DocumentVerifyRequest
 )
 from ..services.ai_service import ai_service
+from ..services.document_validator import DocumentValidator
 from ..config import settings
+
+
+class InternalDocumentUpload(BaseModel):
+    source_system: str  # "SX", "CX", or "WX"
+    document_url: str
+    document_type: str
+    document_name: str
+    uploaded_by: str
 
 router = APIRouter(prefix="/api", tags=["documents"])
 
@@ -75,6 +85,113 @@ async def upload_document(
     db.add(document)
     db.commit()
     db.refresh(document)
+
+    return document
+
+
+@router.post("/clients/{client_id}/documents/from-internal-system", response_model=DocumentResponse)
+async def upload_document_from_internal_system(
+    client_id: int,
+    upload_data: InternalDocumentUpload,
+    db: Session = Depends(get_db)
+):
+    """Upload a document from internal system with automatic OCR/LLM processing"""
+    # Verify client exists
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    # Create upload directory if it doesn't exist
+    upload_dir = settings.upload_dir
+    os.makedirs(upload_dir, exist_ok=True)
+
+    # Simulate fetching document from internal system
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{client_id}_{timestamp}_{upload_data.document_name}"
+    file_path = os.path.join(upload_dir, filename)
+
+    # Create simulated document content for demo
+    simulated_content = f"""
+INTERNAL DOCUMENT FROM {upload_data.source_system}
+
+Document Type: {upload_data.document_type}
+Source System: {upload_data.source_system}
+Client: {client.name}
+Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+
+This is a simulated document fetched from the {upload_data.source_system} system.
+In production, this would be the actual document content retrieved from {upload_data.document_url}.
+
+Legal Entity Name: {client.name}
+Country of Incorporation: {client.country_of_incorporation or 'Not specified'}
+Entity Type: {client.entity_type or 'Not specified'}
+    """
+
+    # Write simulated content to file
+    with open(file_path, "w") as f:
+        f.write(simulated_content)
+
+    # Map document type to category
+    category_mapping = {
+        "registration_certificate": DocumentCategory.REGISTRATION_CERTIFICATE,
+        "articles_of_incorporation": DocumentCategory.ARTICLES_OF_INCORPORATION,
+        "board_resolution": DocumentCategory.BOARD_RESOLUTION,
+        "kyc_documentation": DocumentCategory.KYC_DOCUMENTATION,
+        "client_confirmation": DocumentCategory.CLIENT_CONFIRMATION,
+        "product_agreement": DocumentCategory.PRODUCT_AGREEMENT,
+        "due_diligence_report": DocumentCategory.DUE_DILIGENCE_REPORT,
+        "financial_statements": DocumentCategory.FINANCIAL_STATEMENTS,
+        "compliance_certificate": DocumentCategory.COMPLIANCE_CERTIFICATE,
+        "risk_assessment": DocumentCategory.RISK_ASSESSMENT
+    }
+
+    document_category = category_mapping.get(upload_data.document_type, DocumentCategory.OTHER)
+
+    # Create document record
+    document = Document(
+        client_id=client_id,
+        filename=upload_data.document_name,
+        file_path=file_path,
+        file_type="pdf",
+        uploaded_by=upload_data.uploaded_by,
+        document_category=document_category,
+        ocr_status=OCRStatus.PROCESSING
+    )
+
+    db.add(document)
+    db.commit()
+    db.refresh(document)
+
+    # Automatically trigger OCR/LLM processing
+    try:
+        # Extract text
+        extracted_text = ai_service.extract_text(file_path, "pdf")
+        document.extracted_text = extracted_text
+
+        # Prepare client data for validation
+        client_data = {
+            "legal_entity_name": client.name,
+            "jurisdiction": client.country_of_incorporation or "Not specified",
+            "entity_type": client.entity_type or "Not specified"
+        }
+
+        # Run enhanced validation
+        validation_result = ai_service.enhanced_validate_document(
+            extracted_text=extracted_text,
+            client_data=client_data,
+            document_category=document.document_category.value
+        )
+
+        document.ai_validation_result = validation_result
+        document.ocr_status = OCRStatus.COMPLETED
+
+        db.commit()
+        db.refresh(document)
+
+    except Exception as e:
+        document.ocr_status = OCRStatus.FAILED
+        db.commit()
+        # Don't raise exception - return document with failed status
 
     return document
 
@@ -197,7 +314,7 @@ async def enhanced_validate_document(document_id: int, db: Session = Depends(get
             CERTIFICATE OF INCORPORATION
 
             Legal Entity Name: {client.name}
-            Jurisdiction: {client.jurisdiction or 'Not specified'}
+            Jurisdiction: {client.country_of_incorporation or 'Not specified'}
             Entity Type: {client.entity_type or 'Not specified'}
 
             Document Type: Certificate of Incorporation
@@ -205,7 +322,7 @@ async def enhanced_validate_document(document_id: int, db: Session = Depends(get
             Document Reference: COI-2023-001234
 
             This is to certify that {client.name} has been duly incorporated
-            under the laws of {client.jurisdiction or 'Not specified'} as a {client.entity_type or 'Not specified'}.
+            under the laws of {client.country_of_incorporation or 'Not specified'} as a {client.entity_type or 'Not specified'}.
 
             Authorized Signatory: John Smith, Company Secretary
             Date of Issuance: January 15, 2023
@@ -217,7 +334,7 @@ async def enhanced_validate_document(document_id: int, db: Session = Depends(get
         # Prepare client data for validation
         client_data = {
             "legal_entity_name": client.name,
-            "jurisdiction": client.jurisdiction or "Not specified",
+            "jurisdiction": client.country_of_incorporation or "Not specified",
             "entity_type": client.entity_type or "Not specified"
         }
 
@@ -298,3 +415,52 @@ def verify_document(
         "verified_by": verify_request.verified_by,
         "validation_status": "verified"
     }
+
+
+@router.get("/clients/{client_id}/document-validation")
+def get_client_document_validation(client_id: int, db: Session = Depends(get_db)):
+    """Run comprehensive document validation for a client"""
+    validator = DocumentValidator(db)
+
+    try:
+        # Run deterministic checks
+        deterministic_results = validator.run_deterministic_checks(client_id)
+
+        # Get AI suggestions for missing documents
+        ai_suggestions = validator.suggest_missing_documents(client_id)
+
+        # Overall status based on data quality score
+        data_quality_score = deterministic_results["data_quality_score"]
+        overall_status = "excellent" if data_quality_score >= 90 else \
+                        "good" if data_quality_score >= 75 else \
+                        "fair" if data_quality_score >= 60 else "poor"
+
+        return {
+            "client_id": client_id,
+            "overall_status": overall_status,
+            "data_quality_score": data_quality_score,
+            "deterministic_checks": deterministic_results,
+            "ai_suggestions": ai_suggestions,
+            "can_publish_to_cx": True,  # Always allow publishing per plan requirements
+            "validation_timestamp": datetime.now().isoformat()
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Validation failed: {str(e)}")
+
+
+@router.post("/documents/{document_id}/ai-validate")
+def ai_validate_document(document_id: int, db: Session = Depends(get_db)):
+    """Run AI validation on specific document"""
+    validator = DocumentValidator(db)
+
+    try:
+        result = validator.run_ai_validation(document_id)
+        return result
+
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI validation failed: {str(e)}")

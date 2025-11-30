@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from ..models.client import OnboardingStatus
 
 
@@ -35,6 +35,7 @@ class ClientResponse(ClientBase):
     cx_sync_status: Optional[str] = None
     cx_sync_date: Optional[datetime] = None
     cx_reference_id: Optional[str] = None
+    client_attributes: Optional[Dict[str, Any]] = None
 
     model_config = ConfigDict(from_attributes=True)
 

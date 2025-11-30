@@ -49,7 +49,7 @@ def fetch_full_client_data(client_id: int, db: Session) -> dict:
         "id": client.id,
         "name": client.name,
         "legal_entity_id": client.legal_entity_id,
-        "jurisdiction": client.jurisdiction,
+        "jurisdiction": client.country_of_incorporation,
         "entity_type": client.entity_type,
         "onboarding_status": client.onboarding_status.value if client.onboarding_status else None,
         "assigned_rm": client.assigned_rm,

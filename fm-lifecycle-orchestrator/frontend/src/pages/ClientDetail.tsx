@@ -5,8 +5,9 @@ import type { Client, OnboardingStage, RegulatoryClassification, RegimeEligibili
 import { RegulatoryFramework } from '../types/index.ts'
 import RegulatoryClassificationCard from '../components/RegulatoryClassificationCard.tsx'
 import RiskBadge from '../components/RiskBadge.tsx'
-import { AlertCircle, CheckCircle2, XCircle, AlertTriangle, RefreshCw, FileCheck, LayoutDashboard, Shield, FileText, ListTodo, ArrowLeft } from 'lucide-react'
+import { AlertCircle, CheckCircle2, XCircle, AlertTriangle, RefreshCw, FileCheck, LayoutDashboard, Shield, FileText, ListTodo, ArrowLeft, Upload, Send } from 'lucide-react'
 import DocumentRequirementsTab from '../components/DocumentRequirementsTab.tsx'
+import { InternalDocumentBrowser } from '../components/InternalDocumentBrowser.tsx'
 
 const STAGES = [
   'Legal Entity Setup',
@@ -809,6 +810,14 @@ export default function ClientDetail() {
   const [error, setError] = useState<string | null>(null)
   const [isLegacyExpanded, setIsLegacyExpanded] = useState(false)
 
+  // CX sync state
+  const [cxSyncStatus, setCxSyncStatus] = useState<any>(null)
+  const [publishingToCX, setPublishingToCX] = useState(false)
+
+  // Document validation state
+  const [documentValidation, setDocumentValidation] = useState<any>(null)
+  const [loadingDocValidation, setLoadingDocValidation] = useState(false)
+
   useEffect(() => {
     const fetchClientData = async () => {
       try {
@@ -913,6 +922,69 @@ export default function ClientDetail() {
       setLoading(false)
     }
   }
+
+  const fetchCXSyncStatus = async () => {
+    if (!clientId) return
+    try {
+      const response = await fetch(`http://localhost:8000/api/clients/${clientId}/cx-sync-status`)
+      const data = await response.json()
+      setCxSyncStatus(data)
+    } catch (error) {
+      console.error('Failed to fetch CX sync status:', error)
+    }
+  }
+
+  const handlePublishToCX = async () => {
+    if (!clientId) return
+    setPublishingToCX(true)
+    try {
+      const response = await fetch(`http://localhost:8000/api/clients/${clientId}/publish-classification-to-cx`, {
+        method: 'POST'
+      })
+      const result = await response.json()
+
+      alert(`Classification Published to CX Successfully!\n\n` +
+            `CX Reference ID: ${result.cx_reference_id}\n` +
+            `Regimes Published: ${result.regimes_published}\n` +
+            `Data Quality Warnings: ${result.data_quality_warnings.length}`)
+
+      // Refresh CX sync status
+      await fetchCXSyncStatus()
+    } catch (error) {
+      console.error('Failed to publish to CX:', error)
+      alert('Failed to publish classification to CX')
+    } finally {
+      setPublishingToCX(false)
+    }
+  }
+
+  const fetchDocumentValidation = async () => {
+    if (!clientId) return
+    setLoadingDocValidation(true)
+    try {
+      const response = await fetch(`http://localhost:8000/api/clients/${clientId}/document-validation`)
+      const data = await response.json()
+      setDocumentValidation(data)
+    } catch (error) {
+      console.error('Failed to fetch document validation:', error)
+    } finally {
+      setLoadingDocValidation(false)
+    }
+  }
+
+  // Fetch CX sync status when regulatory tab is opened
+  useEffect(() => {
+    if (activeTab === 'regulatory' && clientId) {
+      fetchCXSyncStatus()
+    }
+  }, [activeTab, clientId])
+
+  // Fetch document validation when documents tab is opened
+  useEffect(() => {
+    if (activeTab === 'documents' && clientId) {
+      fetchDocumentValidation()
+    }
+  }, [activeTab, clientId])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -2094,13 +2166,200 @@ export default function ClientDetail() {
                 </div>
                 </div>
               ) : null}
+
+              {/* CX Publication Section */}
+              <div style={{ marginTop: '32px', backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '2px solid #e5e7eb' }}>
+                <div style={{ marginBottom: '20px' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Send size={20} className="text-blue-600" />
+                    CX Integration & Publishing
+                  </h3>
+                  <p style={{ fontSize: '14px', color: '#6b7280' }}>
+                    Publish classification results to CX system for downstream processing
+                  </p>
+                </div>
+
+                {cxSyncStatus && (
+                  <div style={{ marginBottom: '20px' }}>
+                    {cxSyncStatus.cx_sync_status === 'synced' ? (
+                      <div style={{ padding: '16px', backgroundColor: '#d1fae5', borderRadius: '8px', border: '1px solid #10b981' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                          <CheckCircle2 size={20} className="text-green-600" />
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#065f46' }}>
+                              Classification Published to CX
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#047857', marginTop: '4px' }}>
+                              Last synced: {new Date(cxSyncStatus.cx_sync_date).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: '13px', color: '#065f46', marginLeft: '32px' }}>
+                          <div>CX Reference ID: <span style={{ fontFamily: 'monospace', fontWeight: '600' }}>{cxSyncStatus.cx_reference_id}</span></div>
+                          <div style={{ marginTop: '4px' }}>Regimes Classified: {cxSyncStatus.regimes_classified}</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ padding: '16px', backgroundColor: '#fef3c7', borderRadius: '8px', border: '1px solid #f59e0b' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <AlertTriangle size={20} className="text-yellow-600" />
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#92400e' }}>
+                              Classification Not Yet Published
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#b45309', marginTop: '4px' }}>
+                              Classification results are available but have not been sent to CX system
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {eligibilities.length > 0 && (
+                  <div style={{ marginTop: '16px' }}>
+                    {documentValidation && documentValidation.data_quality_score < 90 && (
+                      <div style={{ padding: '12px 16px', backgroundColor: '#fef3c7', borderRadius: '8px', border: '1px solid #fbbf24', marginBottom: '16px', fontSize: '13px', color: '#92400e' }}>
+                        <strong>Note:</strong> Classification will be published with data quality exceptions flagged for review (Score: {documentValidation.data_quality_score}%)
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handlePublishToCX}
+                      disabled={publishingToCX || eligibilities.length === 0}
+                      style={{
+                        padding: '12px 24px',
+                        backgroundColor: publishingToCX ? '#9ca3af' : '#2563eb',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: publishingToCX || eligibilities.length === 0 ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!publishingToCX && eligibilities.length > 0) {
+                          e.currentTarget.style.backgroundColor = '#1d4ed8'
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!publishingToCX) {
+                          e.currentTarget.style.backgroundColor = '#2563eb'
+                        }
+                      }}
+                    >
+                      {publishingToCX ? (
+                        <>
+                          <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                          Publishing to CX...
+                        </>
+                      ) : (
+                        <>
+                          <Send size={16} />
+                          {cxSyncStatus?.cx_sync_status === 'synced' ? 'Re-publish to CX' : 'Publish Classification to CX'}
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+
             </div>
           </div>
         )}
 
         {/* Documents Tab */}
         {activeTab === 'documents' && (
-          <DocumentRequirementsTab clientId={Number(clientId)} clientName={client.name} />
+          <div className="space-y-6">
+            {/* Document Validation Summary */}
+            {documentValidation && (
+              <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '2px solid #e5e7eb' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '16px' }}>
+                  Document Validation Summary
+                </h3>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '20px' }}>
+                  <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Overall Status</div>
+                    <div style={{ fontSize: '20px', fontWeight: '600', color: '#111827', textTransform: 'capitalize' }}>
+                      {documentValidation.overall_status}
+                    </div>
+                  </div>
+                  <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Data Quality Score</div>
+                    <div style={{ fontSize: '20px', fontWeight: '600', color: documentValidation.data_quality_score >= 75 ? '#10b981' : '#f59e0b' }}>
+                      {documentValidation.data_quality_score}%
+                    </div>
+                  </div>
+                  <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Documents Present</div>
+                    <div style={{ fontSize: '20px', fontWeight: '600', color: '#111827' }}>
+                      {documentValidation.deterministic_checks?.documents_present}/{documentValidation.deterministic_checks?.total_required_documents}
+                    </div>
+                  </div>
+                  <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Can Publish to CX</div>
+                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                      <CheckCircle2 size={20} />
+                      {documentValidation.can_publish_to_cx ? 'Yes' : 'No'}
+                    </div>
+                  </div>
+                </div>
+
+                {documentValidation.deterministic_checks?.issues && documentValidation.deterministic_checks.issues.length > 0 && (
+                  <div style={{ padding: '12px 16px', backgroundColor: '#fef3c7', borderRadius: '8px', border: '1px solid #fbbf24', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#92400e', marginBottom: '8px' }}>Issues Found:</div>
+                    {documentValidation.deterministic_checks.issues.map((issue: string, idx: number) => (
+                      <div key={idx} style={{ fontSize: '12px', color: '#92400e', marginLeft: '12px' }}>• {issue}</div>
+                    ))}
+                  </div>
+                )}
+
+                {documentValidation.ai_suggestions?.suggestions && documentValidation.ai_suggestions.suggestions.length > 0 && (
+                  <div style={{ marginTop: '16px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '12px' }}>
+                      AI-Suggested Documents (based on similar clients):
+                    </div>
+                    <div style={{ display: 'grid', gap: '8px' }}>
+                      {documentValidation.ai_suggestions.suggestions.map((suggestion: any, idx: number) => (
+                        <div key={idx} style={{ padding: '12px', backgroundColor: '#eff6ff', borderRadius: '8px', border: '1px solid #3b82f6' }}>
+                          <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'start' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e40af' }}>{suggestion.document_name}</div>
+                              <div style={{ fontSize: '12px', color: '#3b82f6', marginTop: '4px' }}>{suggestion.reason}</div>
+                            </div>
+                            <div style={{ padding: '4px 8px', backgroundColor: '#dbeafe', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: '#1e40af' }}>
+                              {suggestion.commonality} common
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Internal Document Browser */}
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '2px solid #e5e7eb' }}>
+              <InternalDocumentBrowser
+                clientId={Number(clientId)}
+                legalEntityId={client?.legal_entity_id}
+                onDocumentUploaded={() => {
+                  // Refresh document validation after upload
+                  fetchDocumentValidation()
+                }}
+              />
+            </div>
+
+            {/* Existing Document Requirements Tab */}
+            <DocumentRequirementsTab clientId={Number(clientId)} clientName={client.name} />
+          </div>
         )}
 
         {/* Tasks Tab */}

@@ -1,12 +1,99 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List
-from datetime import datetime
+from typing import List, Optional
+from datetime import datetime, timedelta
 from ..database import get_db
-from ..models.task import Task, TaskStatus
-from ..schemas.task import TaskCreate, TaskUpdate, TaskResponse
+from ..models.task import Task, TaskStatus, TaskType
+from ..models.client import Client
+from ..schemas.task import TaskCreate, TaskUpdate, TaskResponse, TaskWithClientResponse
 
 router = APIRouter(prefix="/api", tags=["tasks"])
+
+
+@router.get("/tasks", response_model=List[TaskWithClientResponse])
+def get_all_tasks(
+    status: Optional[TaskStatus] = None,
+    assigned_team: Optional[str] = None,
+    assigned_to: Optional[str] = None,
+    task_type: Optional[TaskType] = None,
+    due_date_filter: Optional[str] = None,
+    search: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all tasks across clients with comprehensive filtering.
+    Supports filtering by status, team, assignee, type, due date, and search.
+    """
+    # Build base query with client join
+    query = db.query(Task).join(Client, Task.client_id == Client.id)
+
+    # Apply filters
+    if status:
+        query = query.filter(Task.status == status)
+    if assigned_team:
+        query = query.filter(Task.assigned_team == assigned_team)
+    if assigned_to:
+        query = query.filter(Task.assigned_to.ilike(f"%{assigned_to}%"))
+    if task_type:
+        query = query.filter(Task.task_type == task_type)
+
+    # Due date filters
+    now = datetime.utcnow()
+    if due_date_filter == "overdue":
+        query = query.filter(
+            Task.due_date < now,
+            Task.status != TaskStatus.COMPLETED
+        )
+    elif due_date_filter == "due_this_week":
+        week_end = now + timedelta(days=7)
+        query = query.filter(
+            Task.due_date <= week_end,
+            Task.status != TaskStatus.COMPLETED
+        )
+    elif due_date_filter == "due_this_month":
+        month_end = now + timedelta(days=30)
+        query = query.filter(
+            Task.due_date <= month_end,
+            Task.status != TaskStatus.COMPLETED
+        )
+
+    # Search across task title, description, and client name
+    if search:
+        query = query.filter(
+            (Task.title.ilike(f"%{search}%")) |
+            (Task.description.ilike(f"%{search}%")) |
+            (Client.name.ilike(f"%{search}%"))
+        )
+
+    # Default ordering by due date (nulls last)
+    query = query.order_by(Task.due_date.asc().nullslast())
+
+    # Pagination
+    tasks = query.offset(skip).limit(limit).all()
+
+    # Enrich with client data and computed fields
+    result = []
+    for task in tasks:
+        is_overdue = False
+        days_until_due = None
+
+        if task.due_date:
+            days_until_due = (task.due_date - now).days
+            is_overdue = days_until_due < 0 and task.status != TaskStatus.COMPLETED
+
+        task_data = TaskWithClientResponse(
+            **task.__dict__,
+            client_name=task.client.name,
+            client_legal_entity_id=task.client.legal_entity_id,
+            client_country=task.client.country_of_incorporation or "Unknown",
+            is_overdue=is_overdue,
+            days_until_due=days_until_due
+        )
+        result.append(task_data)
+
+    return result
 
 
 @router.get("/clients/{client_id}/tasks", response_model=List[TaskResponse])

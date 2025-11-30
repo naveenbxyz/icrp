@@ -80,12 +80,28 @@ class ClassificationEngine:
                     "actual": client_attrs.get(rule.rule_type)
                 })
 
+        # Calculate data quality score
+        data_quality_info = self.calculate_data_quality_score(client_id, regime)
+        data_quality_score = data_quality_info["quality_score"]
+
+        # Flag data quality exceptions
+        data_quality_exceptions = []
+        if data_quality_score < 90:
+            data_quality_exceptions.append(f"Data quality score below optimal: {data_quality_score}%")
+        if data_quality_info["missing_evidences"]:
+            data_quality_exceptions.extend(data_quality_info["warnings"])
+
         # Client is eligible if ALL rules match
-        is_eligible = len(unmatched_rules) == 0 and len(matched_rules) > 0
+        rules_eligible = len(unmatched_rules) == 0 and len(matched_rules) > 0
+
+        # IMPORTANT: Allow publication regardless of data quality (per plan requirements)
+        can_publish_to_cx = True
 
         # Generate eligibility reason
-        if is_eligible:
+        if rules_eligible and not data_quality_exceptions:
             reason = f"Client meets all {len(matched_rules)} classification rules for {regime}"
+        elif rules_eligible and data_quality_exceptions:
+            reason = f"Client meets all classification rules but has data quality exceptions"
         elif len(matched_rules) == 0:
             reason = f"Client does not match any classification rules for {regime}"
         else:
@@ -98,7 +114,7 @@ class ClassificationEngine:
         ).first()
 
         if eligibility:
-            eligibility.is_eligible = is_eligible
+            eligibility.is_eligible = rules_eligible
             eligibility.eligibility_reason = reason
             eligibility.matched_rules = matched_rules
             eligibility.unmatched_rules = unmatched_rules
@@ -108,7 +124,7 @@ class ClassificationEngine:
             eligibility = RegimeEligibility(
                 client_id=client_id,
                 regime=regime,
-                is_eligible=is_eligible,
+                is_eligible=rules_eligible,
                 eligibility_reason=reason,
                 matched_rules=matched_rules,
                 unmatched_rules=unmatched_rules,
@@ -122,11 +138,14 @@ class ClassificationEngine:
 
         return {
             "eligibility_id": eligibility.id,
-            "is_eligible": is_eligible,
+            "is_eligible": rules_eligible,
             "reason": reason,
             "matched_rules": matched_rules,
             "unmatched_rules": unmatched_rules,
             "client_attributes": client_attrs,
+            "data_quality_score": data_quality_score,
+            "data_quality_exceptions": data_quality_exceptions,
+            "can_publish_to_cx": can_publish_to_cx,
             "evaluated_at": eligibility.last_evaluated_date.isoformat()
         }
 

@@ -32,6 +32,33 @@ class CXClient:
             "status": "updated"
         }
 
+    def get_client_documents(self, client_id: str) -> List[Dict[str, Any]]:
+        """Get available documents for a client from CX"""
+        # Mock document data
+        return [
+            {
+                "document_type": "kyc_documentation",
+                "document_name": f"KYC Package - {client_id}",
+                "document_url": f"cx://documents/{client_id}/kyc_package.pdf",
+                "last_updated": "2024-03-01",
+                "file_size": "1.2MB"
+            },
+            {
+                "document_type": "client_confirmation",
+                "document_name": f"Client Confirmation - {client_id}",
+                "document_url": f"cx://documents/{client_id}/client_confirmation.pdf",
+                "last_updated": "2024-02-15",
+                "file_size": "320KB"
+            },
+            {
+                "document_type": "product_agreement",
+                "document_name": f"Product Agreement - {client_id}",
+                "document_url": f"cx://documents/{client_id}/product_agreement.pdf",
+                "last_updated": "2024-01-30",
+                "file_size": "540KB"
+            }
+        ]
+
 
 # Singleton instance
 cx_client = CXClient()

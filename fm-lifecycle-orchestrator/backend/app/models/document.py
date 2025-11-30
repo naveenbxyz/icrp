@@ -12,6 +12,13 @@ class DocumentCategory(str, enum.Enum):
     PRODUCT_ELIGIBILITY = "product_eligibility"
     FINANCIAL_STATEMENTS = "financial_statements"
     REGISTRATION_CERTIFICATE = "registration_certificate"
+    ARTICLES_OF_INCORPORATION = "articles_of_incorporation"
+    BOARD_RESOLUTION = "board_resolution"
+    KYC_DOCUMENTATION = "kyc_documentation"
+    PRODUCT_AGREEMENT = "product_agreement"
+    DUE_DILIGENCE_REPORT = "due_diligence_report"
+    COMPLIANCE_CERTIFICATE = "compliance_certificate"
+    RISK_ASSESSMENT = "risk_assessment"
     OTHER = "other"
 
 

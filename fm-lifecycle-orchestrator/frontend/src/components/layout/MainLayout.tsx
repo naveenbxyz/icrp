@@ -2,14 +2,12 @@ import { ReactNode, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
-  Users,
   FileCheck,
   ClipboardList,
   Settings,
   Menu,
   X,
   Shield,
-  Sparkles,
   TrendingUp
 } from 'lucide-react'
 import AIChatBubble from '../AIChatBubble'
@@ -49,24 +47,19 @@ export default function MainLayout({ children }: MainLayoutProps) {
       icon: <LayoutDashboard size={20} />
     },
     {
-      path: '/clients',
-      label: 'Clients',
-      icon: <Users size={20} />
+      path: '/tasks',
+      label: 'Task Inbox',
+      icon: <ClipboardList size={20} />
     },
     {
-      path: '/ai-demo',
-      label: 'AI Demo',
-      icon: <Sparkles size={20} />
+      path: '/compliance',
+      label: 'Compliance',
+      icon: <Shield size={20} />
     },
     {
       path: '/ai-insights',
       label: 'AI Insights',
       icon: <TrendingUp size={20} />
-    },
-    {
-      path: '/tasks',
-      label: 'Tasks',
-      icon: <ClipboardList size={20} />
     },
     {
       path: '/settings',
