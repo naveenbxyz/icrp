@@ -90,13 +90,13 @@ export default function AIProcessingModal({
 
   const getStepIcon = (step: ProcessingStep, index: number) => {
     if (step.status === 'completed') {
-      return <CheckCircle2 size={20} style={{ color: '#10b981' }} />;
+      return <CheckCircle2 size={16} className="text-success" />;
     }
     if (step.status === 'processing') {
-      return <Loader2 size={20} style={{ color: '#8b5cf6', animation: 'spin 1s linear infinite' }} />;
+      return <Loader2 size={16} className="text-accent" style={{ animation: 'spin 1s linear infinite' }} />;
     }
     return (
-      <div style={{
+      <div className="text-muted-foreground" style={{
         width: '20px',
         height: '20px',
         borderRadius: '50%',
@@ -105,8 +105,7 @@ export default function AIProcessingModal({
         alignItems: 'center',
         justifyContent: 'center',
         fontSize: '11px',
-        fontWeight: '600',
-        color: '#9ca3af'
+        fontWeight: '600'
       }}>
         {index + 1}
       </div>
@@ -197,10 +196,9 @@ export default function AIProcessingModal({
               }}>
                 Progress
               </span>
-              <span style={{
+              <span className="text-accent" style={{
                 fontSize: '13px',
-                fontWeight: '700',
-                color: '#8b5cf6'
+                fontWeight: '700'
               }}>
                 {completedSteps}/{totalSteps} steps
               </span>
@@ -247,17 +245,15 @@ export default function AIProcessingModal({
                 {getStepIcon(step, index)}
 
                 <div style={{ flex: 1 }}>
-                  <div style={{
+                  <div className={step.status === 'completed' ? 'text-success' : step.status === 'processing' ? 'text-accent' : 'text-muted-foreground'} style={{
                     fontSize: '14px',
-                    fontWeight: step.status === 'processing' ? '600' : '500',
-                    color: step.status === 'completed' ? '#10b981' : step.status === 'processing' ? '#8b5cf6' : '#6b7280'
+                    fontWeight: step.status === 'processing' ? '600' : '500'
                   }}>
                     {step.label}
                   </div>
                   {step.status === 'completed' && step.duration && (
-                    <div style={{
+                    <div className="text-muted-foreground" style={{
                       fontSize: '11px',
-                      color: '#9ca3af',
                       marginTop: '2px'
                     }}>
                       Completed in {step.duration}ms
@@ -266,11 +262,10 @@ export default function AIProcessingModal({
                 </div>
 
                 {step.status === 'processing' && (
-                  <div style={{
+                  <div className="bg-accent" style={{
                     width: '6px',
                     height: '6px',
                     borderRadius: '50%',
-                    backgroundColor: '#8b5cf6',
                     animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
                   }} />
                 )}
@@ -289,18 +284,16 @@ export default function AIProcessingModal({
             alignItems: 'center',
             gap: '12px'
           }}>
-            <Brain size={20} style={{ color: '#10b981' }} />
+            <Brain size={20} className="text-success" />
             <div style={{ flex: 1 }}>
-              <div style={{
+              <div className="text-success" style={{
                 fontSize: '13px',
-                fontWeight: '600',
-                color: '#065f46'
+                fontWeight: '600'
               }}>
                 AI analysis complete
               </div>
-              <div style={{
+              <div className="text-success" style={{
                 fontSize: '12px',
-                color: '#059669',
                 marginTop: '2px'
               }}>
                 Review the extracted information to verify accuracy

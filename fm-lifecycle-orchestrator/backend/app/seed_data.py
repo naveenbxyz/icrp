@@ -110,8 +110,8 @@ def seed_data():
             framework=RegulatoryFramework.MIFID_II,
             classification="Professional Client",
             classification_date=datetime.now() - timedelta(days=80),
-            last_review_date=datetime.now() - timedelta(days=30),
-            next_review_date=datetime.now() + timedelta(days=335),
+            last_review_date=datetime.now() - timedelta(days=80),
+            next_review_date=datetime.now() + timedelta(days=285),
             validation_status=ValidationStatus.VALIDATED
         )
         db.add(reg1)
@@ -249,6 +249,7 @@ def seed_data():
         db.add(doc1_9)
 
         # Add RegimeEligibility records for Client1 (demonstrate rule-based assessment)
+        # Only showing the 3 regimes that have been evaluated and are relevant
         print("  Creating regime eligibility records for Client1...")
 
         # MIFID - Eligible
@@ -287,48 +288,8 @@ def seed_data():
         )
         db.add(elig1_2)
 
-        # SFTR - Not Eligible (example of failed rule)
-        elig1_3 = RegimeEligibility(
-            client_id=client1.id,
-            regime="SFTR",
-            is_eligible=False,
-            eligibility_reason="Client matches 0/1 rules. Missing: SFTR Account Type Eligibility",
-            matched_rules=[],
-            unmatched_rules=[{
-                "rule_id": 3,
-                "rule_type": "account_type",
-                "rule_name": "SFTR Account Type Eligibility",
-                "expected": "pension_fund or insurance_company",
-                "actual": "subfund"
-            }],
-            client_attributes=client1.client_attributes,
-            rule_version=1,
-            last_evaluated_date=datetime.now() - timedelta(days=80)
-        )
-        db.add(elig1_3)
-
-        # Dodd Frank (US Person - CFTC) - Not Eligible
-        elig1_4 = RegimeEligibility(
-            client_id=client1.id,
-            regime="Dodd Frank (US Person - CFTC)",
-            is_eligible=False,
-            eligibility_reason="Client matches 0/1 rules. Missing: US Person criteria",
-            matched_rules=[],
-            unmatched_rules=[{
-                "rule_id": 4,
-                "rule_type": "booking_location",
-                "rule_name": "US Person - CFTC Location Requirement",
-                "expected": "US/*",
-                "actual": "UK/London"
-            }],
-            client_attributes=client1.client_attributes,
-            rule_version=1,
-            last_evaluated_date=datetime.now() - timedelta(days=80)
-        )
-        db.add(elig1_4)
-
         # Stays Exempt - Eligible
-        elig1_5 = RegimeEligibility(
+        elig1_3 = RegimeEligibility(
             client_id=client1.id,
             regime="Stays Exempt",
             is_eligible=True,
@@ -343,7 +304,7 @@ def seed_data():
             rule_version=1,
             last_evaluated_date=datetime.now() - timedelta(days=80)
         )
-        db.add(elig1_5)
+        db.add(elig1_3)
 
         # Client 2: US Corporate Pension Fund - In Progress (SSI Validation)
         client2 = Client(
@@ -649,26 +610,34 @@ def seed_data():
         )
         db.add(task5)
 
-        # Client 7: Singapore Sovereign Wealth Fund
+        # Client 7: Singapore Sovereign Wealth Fund (Event-Driven: Country Change Demo)
+        # Scenario: Client changed country of incorporation from Hong Kong to Singapore yesterday
+        # This triggers a periodic review and requires new classification evaluation
         client7 = Client(
             name="Singapore Strategic Investment Fund",
             legal_entity_id="SX007234",
-            country_of_incorporation="Singapore",
+            country_of_incorporation="Singapore",  # CHANGED from Hong Kong yesterday
             entity_type="Sovereign Wealth Fund",
             onboarding_status=OnboardingStatus.COMPLETED,
             assigned_rm="David Wong",
             created_date=datetime.now() - timedelta(days=120),
             client_attributes={
                 "account_type": "trading_entity",
-                "booking_location": "Singapore/DBS",
+                "booking_location": "Singapore/DBS",  # UPDATED from Hong Kong/HSBC
                 "product": "Interest Rate Swaps",
                 "product_grid": {
                     "product_group": "financial_markets",
                     "product_category": "interest_rate",
                     "product_type": "swap",
                     "product_status": "approved",
-                    "bank_entity": "Singapore/DBS"
-                }
+                    "bank_entity": "Singapore/DBS"  # UPDATED from Hong Kong
+                },
+                # Event metadata
+                "previous_country_of_incorporation": "Hong Kong",
+                "country_change_date": (datetime.now() - timedelta(days=1)).isoformat(),
+                "change_reason": "Corporate restructuring - domicile change",
+                "periodic_review_triggered": True,
+                "periodic_review_trigger_date": (datetime.now() - timedelta(days=1)).isoformat()
             }
         )
         db.add(client7)
@@ -695,8 +664,9 @@ def seed_data():
             classification="Professional Client (Per Se)",
             classification_date=datetime.now() - timedelta(days=115),
             last_review_date=datetime.now() - timedelta(days=115),
-            next_review_date=datetime.now() + timedelta(days=250),
-            validation_status=ValidationStatus.VALIDATED
+            next_review_date=datetime.now() - timedelta(days=1),  # OVERDUE for review due to country change
+            validation_status=ValidationStatus.PENDING,  # PENDING re-validation after country change
+            validation_notes="Periodic review triggered by country of incorporation change from Hong Kong to Singapore. Classification needs re-validation for Singapore-specific regimes (MAS requirements)."
         )
         db.add(reg7)
 
@@ -944,6 +914,29 @@ def seed_data():
             last_evaluated_date=datetime.now() - timedelta(days=115)
         )
         db.add(elig7_6)
+
+        # NEW regime triggered by country change event
+        elig7_7 = RegimeEligibility(
+            client_id=client7.id,
+            regime="MAS FAIR Client Classification",
+            is_eligible=True,
+            eligibility_reason="Client meets requirements for MAS FAIR Client Classification after country change to Singapore",
+            matched_rules=[{
+                "rule_id": 10,
+                "rule_type": "country_of_incorporation",
+                "rule_name": "MAS FAIR Singapore Entity Requirement"
+            }, {
+                "rule_id": 11,
+                "rule_type": "account_type",
+                "rule_name": "MAS FAIR Account Type Eligibility"
+            }],
+            unmatched_rules=[],
+            client_attributes=client7.client_attributes,
+            rule_version=1,
+            last_evaluated_date=datetime.now() - timedelta(days=1),  # Evaluated yesterday after country change
+            data_quality_score=92.0
+        )
+        db.add(elig7_7)
 
         # Client 8: Australian Superannuation Fund
         client8 = Client(
@@ -1328,7 +1321,7 @@ def seed_data():
             {"name": StageName.VALUATION_SETUP, "status": StageStatus.NOT_STARTED, "assigned_team": "Valuation Team"}
         ])
 
-        # Client 14: Singapore Trading Corp - Early Stage (for CX Product Approval Demo)
+        # Client 14: Singapore Trading Corp - Early Stage (for Client Central Product Approval Demo)
         client14 = Client(
             name="Pacific Rim Trading Corporation",
             legal_entity_id="SX009900",
@@ -1345,7 +1338,7 @@ def seed_data():
                     "product_group": "financial_markets",
                     "product_category": "fx",
                     "product_type": "forward",
-                    "product_status": "pending_approval",  # NOT YET APPROVED - awaiting CX approval
+                    "product_status": "pending_approval",  # NOT YET APPROVED - awaiting Client Central approval
                     "bank_entity": "Singapore/Singapore"
                 }
             }
@@ -1355,7 +1348,7 @@ def seed_data():
 
         create_onboarding_stages(db, client14.id, [
             {"name": StageName.LEGAL_ENTITY_SETUP, "status": StageStatus.IN_PROGRESS, "assigned_team": "Entity Management",
-             "started_date": datetime.now() - timedelta(days=3), "notes": "Awaiting CX product approval before proceeding to classification"},
+             "started_date": datetime.now() - timedelta(days=3), "notes": "Awaiting Client Central product approval before proceeding to classification"},
             {"name": StageName.REG_CLASSIFICATION, "status": StageStatus.NOT_STARTED, "assigned_team": "Compliance"},
             {"name": StageName.FM_ACCOUNT_REQUEST, "status": StageStatus.NOT_STARTED, "assigned_team": "FM Operations"},
             {"name": StageName.STATIC_DATA_ENRICHMENT, "status": StageStatus.NOT_STARTED, "assigned_team": "FM Ops - Data"},

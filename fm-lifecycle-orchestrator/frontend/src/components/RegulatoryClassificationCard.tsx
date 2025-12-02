@@ -9,9 +9,9 @@ interface RegulatoryClassificationCardProps {
 export default function RegulatoryClassificationCard({ classification }: RegulatoryClassificationCardProps) {
   const getValidationStatusColor = (status: ValidationStatus) => {
     switch (status) {
-      case ValidationStatus.VALIDATED: return { bg: '#d1fae5', text: '#065f46', label: 'Validated' }
-      case ValidationStatus.REJECTED: return { bg: '#fee2e2', text: '#991b1b', label: 'Rejected' }
-      default: return { bg: '#fef3c7', text: '#92400e', label: 'Pending' }
+      case ValidationStatus.VALIDATED: return { classes: 'bg-success/10 text-success', label: 'Complete' }
+      case ValidationStatus.REJECTED: return { classes: 'bg-destructive/10 text-destructive', label: 'Rejected' }
+      default: return { classes: 'bg-warning/10 text-warning', label: 'Pending' }
     }
   }
 
@@ -38,7 +38,7 @@ export default function RegulatoryClassificationCard({ classification }: Regulat
     }
   }
 
-  const statusColors = getValidationStatusColor(classification.validation_status)
+  const statusInfo = getValidationStatusColor(classification.validation_status)
   const frameworkColors = getFrameworkColor(classification.framework)
   const overdueReview = isReviewOverdue(classification.next_review_date)
 
@@ -72,15 +72,8 @@ export default function RegulatoryClassificationCard({ classification }: Regulat
       {/* Validation Status */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
         <span style={{ fontSize: '13px', color: '#6b7280' }}>Status:</span>
-        <span style={{
-          padding: '3px 10px',
-          borderRadius: '10px',
-          fontSize: '11px',
-          fontWeight: '500',
-          backgroundColor: statusColors.bg,
-          color: statusColors.text,
-        }}>
-          {statusColors.label}
+        <span className={`${statusInfo.classes} px-2.5 py-0.5 rounded-full text-xs font-medium`}>
+          {statusInfo.label}
         </span>
       </div>
 

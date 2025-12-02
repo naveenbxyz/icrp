@@ -92,9 +92,9 @@ export default function Compliance() {
   }, {} as Record<number, { client_name: string; client_legal_entity_id: string; client_country: string; client_id: number; alerts: DataQualityAlert[] }>)
 
   const getQualityColor = (score: number) => {
-    if (score >= 90) return '#16a34a'
-    if (score >= 70) return '#f59e0b'
-    return '#dc2626'
+    if (score >= 90) return 'text-success'
+    if (score >= 70) return 'text-warning'
+    return 'text-destructive'
   }
 
   const getQualityLabel = (score: number) => {
@@ -108,12 +108,12 @@ export default function Compliance() {
       {/* Header */}
       <div style={{ backgroundColor: 'white', borderBottom: '1px solid #e5e7eb', padding: '24px 40px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-          <Shield size={32} style={{ color: '#3b82f6' }} />
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', margin: 0, color: '#111827' }}>
+          <Shield size={24} className="text-info" />
+          <h1 className="text-foreground" style={{ fontSize: '32px', fontWeight: 'bold', margin: 0 }}>
             Compliance Overview
           </h1>
         </div>
-        <p style={{ color: '#6b7280', fontSize: '16px', margin: 0 }}>
+        <p className="text-muted-foreground" style={{ fontSize: '16px', margin: 0 }}>
           Regulatory classification management and compliance monitoring across all clients
         </p>
       </div>
@@ -124,13 +124,13 @@ export default function Compliance() {
           <div style={{ display: 'flex', borderBottom: '2px solid #e5e7eb' }}>
             <button
               onClick={() => setActiveTab('overview')}
+              className={activeTab === 'overview' ? 'text-info' : 'text-muted-foreground'}
               style={{
                 flex: 1,
                 padding: '16px 24px',
                 border: 'none',
                 backgroundColor: activeTab === 'overview' ? 'white' : '#f9fafb',
                 borderBottom: activeTab === 'overview' ? '3px solid #3b82f6' : '3px solid transparent',
-                color: activeTab === 'overview' ? '#3b82f6' : '#6b7280',
                 fontWeight: activeTab === 'overview' ? '600' : '400',
                 fontSize: '16px',
                 cursor: 'pointer',
@@ -141,13 +141,13 @@ export default function Compliance() {
             </button>
             <button
               onClick={() => setActiveTab('quality')}
+              className={activeTab === 'quality' ? 'text-info' : 'text-muted-foreground'}
               style={{
                 flex: 1,
                 padding: '16px 24px',
                 border: 'none',
                 backgroundColor: activeTab === 'quality' ? 'white' : '#f9fafb',
                 borderBottom: activeTab === 'quality' ? '3px solid #3b82f6' : '3px solid transparent',
-                color: activeTab === 'quality' ? '#3b82f6' : '#6b7280',
                 fontWeight: activeTab === 'quality' ? '600' : '400',
                 fontSize: '16px',
                 cursor: 'pointer',
@@ -156,10 +156,8 @@ export default function Compliance() {
             >
               Data Quality Alerts
               {qualityAlerts.length > 0 && (
-                <span style={{
+                <span className="bg-destructive text-white" style={{
                   marginLeft: '8px',
-                  backgroundColor: '#dc2626',
-                  color: 'white',
                   padding: '2px 8px',
                   borderRadius: '12px',
                   fontSize: '12px',
@@ -181,55 +179,55 @@ export default function Compliance() {
                 <div style={{ backgroundColor: '#f9fafb', padding: '24px', borderRadius: '12px', border: '2px solid #e5e7eb' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                      <p style={{ color: '#6b7280', fontSize: '14px', margin: 0, fontWeight: '500' }}>Total Clients Classified</p>
-                      <p style={{ fontSize: '36px', fontWeight: 'bold', margin: '8px 0 0 0', color: '#111827' }}>
+                      <p className="text-muted-foreground" style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>Total Clients Classified</p>
+                      <p className="text-foreground" style={{ fontSize: '36px', fontWeight: 'bold', margin: '8px 0 0 0' }}>
                         {overview.total_clients_classified}
                       </p>
                     </div>
-                    <FileText size={48} style={{ color: '#3b82f6', opacity: 0.3 }} />
+                    <FileText size={48} className="text-info" style={{ opacity: 0.3 }} />
                   </div>
                 </div>
 
                 <div style={{ backgroundColor: '#fef3c7', padding: '24px', borderRadius: '12px', border: '2px solid #fbbf24' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                      <p style={{ color: '#92400e', fontSize: '14px', margin: 0, fontWeight: '500' }}>Reviews Due (30 days)</p>
-                      <p style={{ fontSize: '36px', fontWeight: 'bold', margin: '8px 0 0 0', color: '#f59e0b' }}>
+                      <p className="text-warning" style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>Reviews Due (30 days)</p>
+                      <p className="text-warning" style={{ fontSize: '36px', fontWeight: 'bold', margin: '8px 0 0 0' }}>
                         {overview.upcoming_reviews.next_30_days}
                       </p>
                     </div>
-                    <Clock size={48} style={{ color: '#f59e0b', opacity: 0.3 }} />
+                    <Clock size={48} className="text-warning" style={{ opacity: 0.3 }} />
                   </div>
                 </div>
 
                 <div style={{ backgroundColor: '#dcfce7', padding: '24px', borderRadius: '12px', border: '2px solid #16a34a' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                      <p style={{ color: '#166534', fontSize: '14px', margin: 0, fontWeight: '500' }}>Excellent Data Quality</p>
-                      <p style={{ fontSize: '36px', fontWeight: 'bold', margin: '8px 0 0 0', color: '#16a34a' }}>
+                      <p className="text-success" style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>Excellent Data Quality</p>
+                      <p className="text-success" style={{ fontSize: '36px', fontWeight: 'bold', margin: '8px 0 0 0' }}>
                         {overview.data_quality_summary.excellent}
                       </p>
                     </div>
-                    <CheckCircle size={48} style={{ color: '#16a34a', opacity: 0.3 }} />
+                    <CheckCircle size={48} className="text-success" style={{ opacity: 0.3 }} />
                   </div>
                 </div>
 
                 <div style={{ backgroundColor: '#fee2e2', padding: '24px', borderRadius: '12px', border: '2px solid #dc2626' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                      <p style={{ color: '#991b1b', fontSize: '14px', margin: 0, fontWeight: '500' }}>Needs Improvement</p>
-                      <p style={{ fontSize: '36px', fontWeight: 'bold', margin: '8px 0 0 0', color: '#dc2626' }}>
+                      <p className="text-destructive" style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>Needs Improvement</p>
+                      <p className="text-destructive" style={{ fontSize: '36px', fontWeight: 'bold', margin: '8px 0 0 0' }}>
                         {overview.data_quality_summary.needs_improvement}
                       </p>
                     </div>
-                    <AlertTriangle size={48} style={{ color: '#dc2626', opacity: 0.3 }} />
+                    <AlertTriangle size={48} className="text-destructive" style={{ opacity: 0.3 }} />
                   </div>
                 </div>
               </div>
 
               {/* Regime Coverage */}
               <div style={{ backgroundColor: '#f9fafb', padding: '24px', borderRadius: '12px', border: '2px solid #e5e7eb' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: '600', margin: '0 0 20px 0', color: '#111827' }}>
+                <h3 className="text-foreground" style={{ fontSize: '18px', fontWeight: '600', margin: '0 0 20px 0' }}>
                   Regime Coverage
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
@@ -244,11 +242,9 @@ export default function Compliance() {
                       border: '1px solid #e5e7eb'
                     }}>
                       <span style={{ fontSize: '14px', color: '#374151', fontWeight: '500' }}>{regime}</span>
-                      <span style={{
+                      <span className="text-info bg-info/10" style={{
                         fontSize: '16px',
                         fontWeight: 'bold',
-                        color: '#3b82f6',
-                        backgroundColor: '#dbeafe',
                         padding: '4px 12px',
                         borderRadius: '12px'
                       }}>
@@ -285,23 +281,23 @@ export default function Compliance() {
                   <option value={85}>Below 85%</option>
                   <option value={70}>Below 70%</option>
                 </select>
-                <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                <span className="text-muted-foreground" style={{ fontSize: '14px' }}>
                   Showing {qualityAlerts.length} regime{qualityAlerts.length !== 1 ? 's' : ''} below {threshold}% data quality
                 </span>
               </div>
 
               {/* Quality Alerts */}
               {loading ? (
-                <div style={{ textAlign: 'center', padding: '60px', color: '#6b7280' }}>
+                <div className="text-muted-foreground" style={{ textAlign: 'center', padding: '60px' }}>
                   Loading data quality alerts...
                 </div>
               ) : Object.keys(alertsByClient).length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '60px' }}>
-                  <CheckCircle size={64} style={{ color: '#16a34a', margin: '0 auto 16px' }} />
+                  <CheckCircle size={48} className="text-success" style={{ margin: '0 auto 16px' }} />
                   <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#374151', margin: '0 0 8px 0' }}>
                     No Quality Issues Found
                   </h3>
-                  <p style={{ color: '#6b7280', fontSize: '16px' }}>
+                  <p className="text-muted-foreground" style={{ fontSize: '16px' }}>
                     All regimes meet the {threshold}% data quality threshold
                   </p>
                 </div>
@@ -326,10 +322,10 @@ export default function Compliance() {
                         <div>
                           <button
                             onClick={() => navigate(`/client/${client_id}`)}
+                            className="text-info"
                             style={{
                               background: 'none',
                               border: 'none',
-                              color: '#3b82f6',
                               cursor: 'pointer',
                               fontWeight: '600',
                               fontSize: '16px',
@@ -338,13 +334,11 @@ export default function Compliance() {
                           >
                             {client_name}
                           </button>
-                          <p style={{ fontSize: '14px', color: '#6b7280', margin: '4px 0 0 0' }}>
+                          <p className="text-muted-foreground" style={{ fontSize: '14px', margin: '4px 0 0 0' }}>
                             {client_legal_entity_id} • {client_country}
                           </p>
                         </div>
-                        <div style={{
-                          backgroundColor: '#fee2e2',
-                          color: '#991b1b',
+                        <div className="bg-destructive/10 text-destructive" style={{
                           padding: '6px 16px',
                           borderRadius: '12px',
                           fontSize: '14px',
@@ -366,24 +360,22 @@ export default function Compliance() {
                           }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
                               <div>
-                                <h4 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#111827' }}>
+                                <h4 className="text-foreground" style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>
                                   {alert.regime}
                                 </h4>
-                                <p style={{ fontSize: '14px', color: '#6b7280', margin: '4px 0 0 0' }}>
+                                <p className="text-muted-foreground" style={{ fontSize: '14px', margin: '4px 0 0 0' }}>
                                   {alert.is_eligible ? 'Eligible' : 'Not Eligible'}
                                 </p>
                               </div>
                               <div style={{ textAlign: 'right' }}>
-                                <div style={{
+                                <div className={getQualityColor(alert.data_quality_score)} style={{
                                   fontSize: '24px',
-                                  fontWeight: 'bold',
-                                  color: getQualityColor(alert.data_quality_score)
+                                  fontWeight: 'bold'
                                 }}>
                                   {alert.data_quality_score}%
                                 </div>
-                                <div style={{
+                                <div className={getQualityColor(alert.data_quality_score)} style={{
                                   fontSize: '12px',
-                                  color: getQualityColor(alert.data_quality_score),
                                   fontWeight: '600'
                                 }}>
                                   {getQualityLabel(alert.data_quality_score)}
@@ -398,16 +390,16 @@ export default function Compliance() {
                                   Matched Rules ({alert.matched_rules?.length || 0})
                                 </p>
                                 {alert.matched_rules && alert.matched_rules.length > 0 ? (
-                                  <div style={{ fontSize: '13px', color: '#16a34a' }}>
+                                  <div className="text-success" style={{ fontSize: '13px' }}>
                                     {alert.matched_rules.map((rule, i) => (
                                       <div key={i} style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <CheckCircle size={14} />
+                                        <CheckCircle size={16} />
                                         <span>{rule}</span>
                                       </div>
                                     ))}
                                   </div>
                                 ) : (
-                                  <p style={{ fontSize: '13px', color: '#9ca3af' }}>No rules matched</p>
+                                  <p className="text-muted-foreground" style={{ fontSize: '13px' }}>No rules matched</p>
                                 )}
                               </div>
 
@@ -416,16 +408,16 @@ export default function Compliance() {
                                   Unmatched Rules ({alert.unmatched_rules?.length || 0})
                                 </p>
                                 {alert.unmatched_rules && alert.unmatched_rules.length > 0 ? (
-                                  <div style={{ fontSize: '13px', color: '#dc2626' }}>
+                                  <div className="text-destructive" style={{ fontSize: '13px' }}>
                                     {alert.unmatched_rules.map((rule, i) => (
                                       <div key={i} style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <AlertTriangle size={14} />
+                                        <AlertTriangle size={16} />
                                         <span>{rule}</span>
                                       </div>
                                     ))}
                                   </div>
                                 ) : (
-                                  <p style={{ fontSize: '13px', color: '#9ca3af' }}>All rules matched</p>
+                                  <p className="text-muted-foreground" style={{ fontSize: '13px' }}>All rules matched</p>
                                 )}
                               </div>
                             </div>
@@ -436,7 +428,7 @@ export default function Compliance() {
                                 <p style={{ fontSize: '12px', fontWeight: '600', color: '#374151', margin: '0 0 4px 0' }}>
                                   Reason:
                                 </p>
-                                <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
+                                <p className="text-muted-foreground" style={{ fontSize: '13px', margin: 0 }}>
                                   {alert.eligibility_reason}
                                 </p>
                               </div>

@@ -196,7 +196,7 @@ export default function DocumentUploadModal({
 
                 {selectedFile ? (
                   <div>
-                    <File size={40} style={{ margin: '0 auto 12px', color: '#10b981' }} />
+                    <File size={48} style={{ margin: '0 auto 12px', color: '#10b981' }} />
                     <p style={{ fontSize: '14px', fontWeight: '500', color: '#111827', margin: 0 }}>
                       {selectedFile.name}
                     </p>
@@ -206,7 +206,7 @@ export default function DocumentUploadModal({
                   </div>
                 ) : (
                   <div>
-                    <Upload size={40} style={{ margin: '0 auto 12px', color: '#9ca3af' }} />
+                    <Upload size={48} style={{ margin: '0 auto 12px', color: '#9ca3af' }} />
                     <p style={{ fontSize: '14px', fontWeight: '500', color: '#111827', margin: 0 }}>
                       Click to select a file
                     </p>

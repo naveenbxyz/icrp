@@ -60,34 +60,50 @@ export default function AIInsights() {
   const getInsightIcon = (type: string) => {
     switch (type) {
       case 'success':
-        return <CheckCircle size={20} style={{ color: '#10b981' }} />;
+        return <CheckCircle size={20} className="text-success" />;
       case 'warning':
-        return <AlertTriangle size={20} style={{ color: '#f59e0b' }} />;
+        return <AlertTriangle size={20} className="text-warning" />;
       case 'alert':
-        return <AlertTriangle size={20} style={{ color: '#ef4444' }} />;
+        return <AlertTriangle size={20} className="text-destructive" />;
       default:
-        return <Info size={20} style={{ color: '#3b82f6' }} />;
+        return <Info size={20} className="text-info" />;
     }
   };
 
-  const getInsightColor = (type: string) => {
+  const getInsightClasses = (type: string) => {
     switch (type) {
       case 'success':
-        return { bg: '#f0fdf4', border: '#bbf7d0', text: '#166534' };
+        return {
+          container: 'bg-success/10 border-success/30',
+          text: 'text-success',
+          button: 'border-success/30 hover:bg-success/5'
+        };
       case 'warning':
-        return { bg: '#fffbeb', border: '#fde68a', text: '#92400e' };
+        return {
+          container: 'bg-warning/10 border-warning/30',
+          text: 'text-warning',
+          button: 'border-warning/30 hover:bg-warning/5'
+        };
       case 'alert':
-        return { bg: '#fef2f2', border: '#fecaca', text: '#991b1b' };
+        return {
+          container: 'bg-destructive/10 border-destructive/30',
+          text: 'text-destructive',
+          button: 'border-destructive/30 hover:bg-destructive/5'
+        };
       default:
-        return { bg: '#eff6ff', border: '#bfdbfe', text: '#1e40af' };
+        return {
+          container: 'bg-info/10 border-info/30',
+          text: 'text-info',
+          button: 'border-info/30 hover:bg-info/5'
+        };
     }
   };
 
   if (isLoading) {
     return (
       <div style={{ padding: '32px', textAlign: 'center' }}>
-        <Sparkles size={48} style={{ color: '#8b5cf6', margin: '0 auto 16px' }} />
-        <p style={{ color: '#6b7280' }}>Analyzing data and generating insights...</p>
+        <Sparkles size={48} className="text-accent mx-auto mb-4" />
+        <p className="text-muted-foreground">Analyzing data and generating insights...</p>
       </div>
     );
   }
@@ -95,7 +111,7 @@ export default function AIInsights() {
   if (!insightsData) {
     return (
       <div style={{ padding: '32px', textAlign: 'center' }}>
-        <p style={{ color: '#6b7280' }}>Failed to load insights. Please try again.</p>
+        <p className="text-muted-foreground">Failed to load insights. Please try again.</p>
       </div>
     );
   }
@@ -105,12 +121,12 @@ export default function AIInsights() {
       {/* Header */}
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-          <Sparkles size={32} style={{ color: '#8b5cf6' }} />
-          <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#111827', margin: 0 }}>
+          <Sparkles size={24} className="text-accent" />
+          <h1 className="text-3xl font-bold text-foreground m-0">
             AI Insights Dashboard
           </h1>
         </div>
-        <p style={{ fontSize: '16px', color: '#6b7280', margin: 0 }}>
+        <p className="text-base text-muted-foreground m-0">
           AI-powered analysis of client onboarding, documents, and compliance risks
         </p>
       </div>
@@ -164,22 +180,22 @@ export default function AIInsights() {
           </div>
           <div style={{ display: 'flex', gap: '16px', marginTop: '12px' }}>
             <div>
-              <div style={{ fontSize: '24px', fontWeight: '700', color: '#10b981' }}>
+              <div className="text-2xl font-bold text-success">
                 {insightsData.summary.risk_distribution.low}
               </div>
-              <div style={{ fontSize: '11px', color: '#6b7280' }}>Low</div>
+              <div className="text-xs text-muted-foreground">Low</div>
             </div>
             <div>
-              <div style={{ fontSize: '24px', fontWeight: '700', color: '#f59e0b' }}>
+              <div className="text-2xl font-bold text-warning">
                 {insightsData.summary.risk_distribution.medium}
               </div>
-              <div style={{ fontSize: '11px', color: '#6b7280' }}>Medium</div>
+              <div className="text-xs text-muted-foreground">Medium</div>
             </div>
             <div>
-              <div style={{ fontSize: '24px', fontWeight: '700', color: '#ef4444' }}>
+              <div className="text-2xl font-bold text-destructive">
                 {insightsData.summary.risk_distribution.high}
               </div>
-              <div style={{ fontSize: '11px', color: '#6b7280' }}>High</div>
+              <div className="text-xs text-muted-foreground">High</div>
             </div>
           </div>
         </div>
@@ -193,7 +209,7 @@ export default function AIInsights() {
           <div style={{ fontSize: '14px', fontWeight: '600', color: '#6b7280', marginBottom: '8px' }}>
             Pending Documents
           </div>
-          <div style={{ fontSize: '36px', fontWeight: '700', color: '#f59e0b' }}>
+          <div className="text-4xl font-bold text-warning">
             {insightsData.summary.pending_documents}
           </div>
           <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
@@ -237,15 +253,11 @@ export default function AIInsights() {
                   borderRadius: '6px'
                 }}>
                   {trend.direction === 'up' ? (
-                    <ArrowUp size={14} style={{ color: '#10b981' }} />
+                    <ArrowUp size={16} className="text-success" />
                   ) : (
-                    <ArrowDown size={14} style={{ color: '#ef4444' }} />
+                    <ArrowDown size={16} className="text-destructive" />
                   )}
-                  <span style={{
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    color: trend.direction === 'up' ? '#10b981' : '#ef4444'
-                  }}>
+                  <span className={`text-xs font-semibold ${trend.direction === 'up' ? 'text-success' : 'text-destructive'}`}>
                     {Math.abs(trend.change).toFixed(1)}%
                   </span>
                 </div>
@@ -263,48 +275,26 @@ export default function AIInsights() {
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {insightsData.insights.map((insight, idx) => {
-              const colors = getInsightColor(insight.type);
+              const classes = getInsightClasses(insight.type);
               return (
-                <div key={idx} style={{
-                  padding: '20px',
-                  backgroundColor: colors.bg,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: '12px'
-                }}>
+                <div key={idx} className={`p-5 ${classes.container} border rounded-xl`}>
                   <div style={{ display: 'flex', gap: '16px' }}>
                     <div style={{ flexShrink: 0, marginTop: '2px' }}>
                       {getInsightIcon(insight.type)}
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                        <h3 style={{ fontSize: '16px', fontWeight: '600', color: colors.text, margin: 0 }}>
+                        <h3 className={`text-base font-semibold ${classes.text} m-0`}>
                           {insight.title}
                         </h3>
-                        <span style={{
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          textTransform: 'uppercase',
-                          color: colors.text,
-                          backgroundColor: 'white',
-                          padding: '4px 8px',
-                          borderRadius: '4px'
-                        }}>
+                        <span className={`text-xs font-semibold uppercase ${classes.text} bg-background px-2 py-1 rounded`}>
                           {insight.priority}
                         </span>
                       </div>
-                      <p style={{ fontSize: '14px', color: colors.text, margin: '0 0 12px 0', opacity: 0.9 }}>
+                      <p className={`text-sm ${classes.text} opacity-90 mb-3`}>
                         {insight.description}
                       </p>
-                      <button style={{
-                        padding: '8px 16px',
-                        backgroundColor: 'white',
-                        border: `1px solid ${colors.border}`,
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        fontWeight: '500',
-                        color: colors.text,
-                        cursor: 'pointer'
-                      }}>
+                      <button className={`px-4 py-2 bg-background border ${classes.button} rounded-md text-sm font-medium ${classes.text} cursor-pointer`}>
                         {insight.action}
                       </button>
                     </div>
@@ -322,19 +312,10 @@ export default function AIInsights() {
           <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#111827', marginBottom: '16px' }}>
             AI Recommendations
           </h2>
-          <div style={{
-            padding: '20px',
-            backgroundColor: '#eff6ff',
-            border: '1px solid #bfdbfe',
-            borderRadius: '12px'
-          }}>
+          <div className="p-5 bg-info/10 border border-info/30 rounded-xl">
             <ul style={{ margin: 0, paddingLeft: '24px' }}>
               {insightsData.recommendations.map((rec, idx) => (
-                <li key={idx} style={{
-                  fontSize: '14px',
-                  color: '#1e40af',
-                  marginBottom: idx < insightsData.recommendations.length - 1 ? '8px' : 0
-                }}>
+                <li key={idx} className="text-sm text-info mb-2 last:mb-0">
                   {rec}
                 </li>
               ))}

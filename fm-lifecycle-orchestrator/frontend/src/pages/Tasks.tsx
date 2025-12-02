@@ -79,20 +79,13 @@ export default function Tasks() {
   // Get status badge style
   const getStatusBadge = (status: string) => {
     const styles = {
-      pending: { bg: '#fef3c7', color: '#92400e', text: 'Pending' },
-      in_progress: { bg: '#dbeafe', color: '#1e40af', text: 'In Progress' },
-      completed: { bg: '#dcfce7', color: '#166534', text: 'Completed' }
+      pending: { className: 'bg-warning/10 text-warning', text: 'Pending' },
+      in_progress: { className: 'bg-info/10 text-info', text: 'In Progress' },
+      completed: { className: 'bg-success/10 text-success', text: 'Completed' }
     }
     const style = styles[status as keyof typeof styles] || styles.pending
     return (
-      <span style={{
-        backgroundColor: style.bg,
-        color: style.color,
-        padding: '4px 12px',
-        borderRadius: '12px',
-        fontSize: '12px',
-        fontWeight: '600'
-      }}>
+      <span className={`${style.className} px-3 py-1 rounded-xl text-xs font-semibold`}>
         {style.text}
       </span>
     )
@@ -100,21 +93,21 @@ export default function Tasks() {
 
   // Format due date with color coding
   const formatDueDate = (task: Task) => {
-    if (!task.due_date) return <span style={{ color: '#9ca3af' }}>No due date</span>
+    if (!task.due_date) return <span className="text-muted-foreground">No due date</span>
 
     const date = new Date(task.due_date)
     const formatted = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
-    let color = '#374151'
-    if (task.is_overdue) color = '#dc2626'
-    else if (task.days_until_due !== null && task.days_until_due <= 3) color = '#f59e0b'
+    let colorClass = 'text-foreground'
+    if (task.is_overdue) colorClass = 'text-destructive'
+    else if (task.days_until_due !== null && task.days_until_due <= 3) colorClass = 'text-warning'
 
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color }}>
+      <div className={`flex items-center gap-1.5 ${colorClass}`}>
         {task.is_overdue && <AlertCircle size={16} />}
         <span style={{ fontWeight: task.is_overdue ? '600' : '400' }}>{formatted}</span>
         {task.days_until_due !== null && !task.is_overdue && task.days_until_due <= 7 && (
-          <span style={{ fontSize: '11px', color: '#6b7280' }}>({task.days_until_due}d)</span>
+          <span className="text-xs text-muted-foreground">({task.days_until_due}d)</span>
         )}
       </div>
     )
@@ -136,12 +129,12 @@ export default function Tasks() {
       {/* Header */}
       <div style={{ backgroundColor: 'white', borderBottom: '1px solid #e5e7eb', padding: '24px 40px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-          <ClipboardList size={32} style={{ color: '#3b82f6' }} />
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', margin: 0, color: '#111827' }}>
+          <ClipboardList size={24} className="text-info" />
+          <h1 style={{ fontSize: '32px', fontWeight: 'bold', margin: 0 }} className="text-foreground">
             Task Inbox
           </h1>
         </div>
-        <p style={{ color: '#6b7280', fontSize: '16px', margin: 0 }}>
+        <p className="text-muted-foreground" style={{ fontSize: '16px', margin: 0 }}>
           Cross-client task management and tracking
         </p>
       </div>
@@ -152,40 +145,40 @@ export default function Tasks() {
           <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '2px solid #e5e7eb' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>Total Open Tasks</p>
-                <p style={{ fontSize: '32px', fontWeight: 'bold', margin: '8px 0 0 0', color: '#111827' }}>{totalOpen}</p>
+                <p className="text-muted-foreground" style={{ fontSize: '14px', margin: 0 }}>Total Open Tasks</p>
+                <p className="text-foreground" style={{ fontSize: '32px', fontWeight: 'bold', margin: '8px 0 0 0' }}>{totalOpen}</p>
               </div>
-              <ClipboardList size={40} style={{ color: '#3b82f6' }} />
+              <ClipboardList size={48} className="text-info" />
             </div>
           </div>
 
           <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '2px solid #fee2e2' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <p style={{ color: '#991b1b', fontSize: '14px', margin: 0 }}>Overdue Tasks</p>
-                <p style={{ fontSize: '32px', fontWeight: 'bold', margin: '8px 0 0 0', color: '#dc2626' }}>{overdueTasks}</p>
+                <p className="text-destructive" style={{ fontSize: '14px', margin: 0 }}>Overdue Tasks</p>
+                <p className="text-destructive" style={{ fontSize: '32px', fontWeight: 'bold', margin: '8px 0 0 0' }}>{overdueTasks}</p>
               </div>
-              <AlertCircle size={40} style={{ color: '#dc2626' }} />
+              <AlertCircle size={48} className="text-destructive" />
             </div>
           </div>
 
           <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '2px solid #fef3c7' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <p style={{ color: '#92400e', fontSize: '14px', margin: 0 }}>Due This Week</p>
-                <p style={{ fontSize: '32px', fontWeight: 'bold', margin: '8px 0 0 0', color: '#f59e0b' }}>{dueThisWeek}</p>
+                <p className="text-warning" style={{ fontSize: '14px', margin: 0 }}>Due This Week</p>
+                <p className="text-warning" style={{ fontSize: '32px', fontWeight: 'bold', margin: '8px 0 0 0' }}>{dueThisWeek}</p>
               </div>
-              <Clock size={40} style={{ color: '#f59e0b' }} />
+              <Clock size={48} className="text-warning" />
             </div>
           </div>
 
           <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '2px solid #dcfce7' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <p style={{ color: '#166534', fontSize: '14px', margin: 0 }}>Completed This Week</p>
-                <p style={{ fontSize: '32px', fontWeight: 'bold', margin: '8px 0 0 0', color: '#16a34a' }}>{completedThisWeek}</p>
+                <p className="text-success" style={{ fontSize: '14px', margin: 0 }}>Completed This Week</p>
+                <p className="text-success" style={{ fontSize: '32px', fontWeight: 'bold', margin: '8px 0 0 0' }}>{completedThisWeek}</p>
               </div>
-              <CheckCircle size={40} style={{ color: '#16a34a' }} />
+              <CheckCircle size={48} className="text-success" />
             </div>
           </div>
         </div>
@@ -193,7 +186,7 @@ export default function Tasks() {
         {/* Filters */}
         <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', marginBottom: '24px', border: '2px solid #e5e7eb' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-            <Filter size={20} style={{ color: '#6b7280' }} />
+            <Filter size={20} className="text-muted-foreground" />
             <h3 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#374151' }}>Filters</h3>
           </div>
 
@@ -295,10 +288,9 @@ export default function Tasks() {
                 />
                 <button
                   onClick={handleSearch}
+                  className="bg-info text-white"
                   style={{
                     padding: '8px 16px',
-                    backgroundColor: '#3b82f6',
-                    color: 'white',
                     border: 'none',
                     borderRadius: '6px',
                     cursor: 'pointer',
@@ -335,17 +327,17 @@ export default function Tasks() {
         {/* Tasks Table */}
         {loading ? (
           <div style={{ backgroundColor: 'white', padding: '60px', borderRadius: '12px', textAlign: 'center' }}>
-            <p style={{ color: '#6b7280', fontSize: '16px' }}>Loading tasks...</p>
+            <p className="text-muted-foreground" style={{ fontSize: '16px' }}>Loading tasks...</p>
           </div>
         ) : error ? (
           <div style={{ backgroundColor: 'white', padding: '60px', borderRadius: '12px', textAlign: 'center', border: '2px solid #fee2e2' }}>
-            <AlertCircle size={48} style={{ color: '#dc2626', margin: '0 auto 16px' }} />
-            <p style={{ color: '#dc2626', fontSize: '16px' }}>{error}</p>
+            <AlertCircle size={48} className="text-destructive" style={{ margin: '0 auto 16px' }} />
+            <p className="text-destructive" style={{ fontSize: '16px' }}>{error}</p>
           </div>
         ) : tasks.length === 0 ? (
           <div style={{ backgroundColor: 'white', padding: '60px', borderRadius: '12px', textAlign: 'center' }}>
-            <ClipboardList size={48} style={{ color: '#9ca3af', margin: '0 auto 16px' }} />
-            <p style={{ color: '#6b7280', fontSize: '16px' }}>No tasks found</p>
+            <ClipboardList size={48} className="text-muted-foreground" style={{ margin: '0 auto 16px' }} />
+            <p className="text-muted-foreground" style={{ fontSize: '16px' }}>No tasks found</p>
           </div>
         ) : (
           <div style={{ backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', border: '2px solid #e5e7eb' }}>
@@ -353,25 +345,25 @@ export default function Tasks() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead style={{ backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
                   <tr>
-                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
+                    <th className="text-muted-foreground" style={{ padding: '16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>
                       Client
                     </th>
-                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
+                    <th className="text-muted-foreground" style={{ padding: '16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>
                       Task
                     </th>
-                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
+                    <th className="text-muted-foreground" style={{ padding: '16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>
                       Team
                     </th>
-                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
+                    <th className="text-muted-foreground" style={{ padding: '16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>
                       Assigned To
                     </th>
-                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
+                    <th className="text-muted-foreground" style={{ padding: '16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>
                       Status
                     </th>
-                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
+                    <th className="text-muted-foreground" style={{ padding: '16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>
                       Due Date
                     </th>
-                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
+                    <th className="text-muted-foreground" style={{ padding: '16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>
                       Actions
                     </th>
                   </tr>
@@ -396,10 +388,10 @@ export default function Tasks() {
                         <div>
                           <button
                             onClick={() => navigate(`/client/${task.client_id}`)}
+                            className="text-info"
                             style={{
                               background: 'none',
                               border: 'none',
-                              color: '#3b82f6',
                               cursor: 'pointer',
                               fontWeight: '600',
                               fontSize: '14px',
@@ -409,18 +401,18 @@ export default function Tasks() {
                           >
                             {task.client_name}
                           </button>
-                          <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0 0' }}>
+                          <p className="text-muted-foreground" style={{ fontSize: '12px', margin: '4px 0 0 0' }}>
                             {task.client_legal_entity_id}
                           </p>
                         </div>
                       </td>
                       <td style={{ padding: '16px' }}>
                         <div style={{ maxWidth: '300px' }}>
-                          <p style={{ fontWeight: '600', fontSize: '14px', color: '#111827', margin: 0 }}>
+                          <p className="text-foreground" style={{ fontWeight: '600', fontSize: '14px', margin: 0 }}>
                             {task.title}
                           </p>
                           {task.description && (
-                            <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <p className="text-muted-foreground" style={{ fontSize: '12px', margin: '4px 0 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {task.description}
                             </p>
                           )}
@@ -432,11 +424,11 @@ export default function Tasks() {
                       <td style={{ padding: '16px' }}>
                         {task.assigned_to ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <User size={14} style={{ color: '#6b7280' }} />
+                            <User size={16} className="text-muted-foreground" />
                             <span style={{ fontSize: '14px', color: '#374151' }}>{task.assigned_to}</span>
                           </div>
                         ) : (
-                          <span style={{ fontSize: '14px', color: '#9ca3af' }}>Unassigned</span>
+                          <span className="text-muted-foreground" style={{ fontSize: '14px' }}>Unassigned</span>
                         )}
                       </td>
                       <td style={{ padding: '16px' }}>
@@ -476,7 +468,7 @@ export default function Tasks() {
 
             {/* Pagination Info */}
             <div style={{ padding: '16px 24px', borderTop: '1px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
-              <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>
+              <p className="text-muted-foreground" style={{ fontSize: '14px', margin: 0 }}>
                 Showing {tasks.length} task{tasks.length !== 1 ? 's' : ''}
               </p>
             </div>

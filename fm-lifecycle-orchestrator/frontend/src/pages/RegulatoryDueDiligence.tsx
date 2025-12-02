@@ -101,7 +101,7 @@ export default function RegulatoryDueDiligence() {
           fontSize: '12px',
           fontWeight: '600'
         }}>
-          <CheckCircle2 size={14} />
+          <CheckCircle2 size={16} />
           Eligible
         </div>
       )
@@ -118,7 +118,7 @@ export default function RegulatoryDueDiligence() {
           fontSize: '12px',
           fontWeight: '600'
         }}>
-          <XCircle size={14} />
+          <XCircle size={16} />
           Not Eligible
         </div>
       )
@@ -128,16 +128,16 @@ export default function RegulatoryDueDiligence() {
   const getQualityScoreBadge = (score: number) => {
     let bgColor = '#fee2e2'
     let textColor = '#991b1b'
-    let icon = <AlertCircle size={14} />
+    let icon = <AlertCircle size={16} />
 
     if (score >= 80) {
       bgColor = '#d1fae5'
       textColor = '#065f46'
-      icon = <CheckCircle2 size={14} />
+      icon = <CheckCircle2 size={16} />
     } else if (score >= 50) {
       bgColor = '#fef3c7'
       textColor = '#92400e'
-      icon = <AlertTriangle size={14} />
+      icon = <AlertTriangle size={16} />
     }
 
     return (
@@ -263,7 +263,7 @@ export default function RegulatoryDueDiligence() {
                         gap: '6px'
                       }}
                     >
-                      <Eye size={14} />
+                      <Eye size={16} />
                       View Details
                     </button>
                   </div>
@@ -374,7 +374,7 @@ export default function RegulatoryDueDiligence() {
                                   gap: '6px'
                                 }}
                               >
-                                <RefreshCw size={14} style={{ animation: evaluating === client.id ? 'spin 1s linear infinite' : 'none' }} />
+                                <RefreshCw size={16} style={{ animation: evaluating === client.id ? 'spin 1s linear infinite' : 'none' }} />
                                 Re-evaluate
                               </button>
                             </div>

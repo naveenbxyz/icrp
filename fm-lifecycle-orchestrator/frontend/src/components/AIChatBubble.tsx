@@ -43,7 +43,7 @@ export default function AIChatBubble({ clientId, clientName }: AIChatBubbleProps
           e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.4)';
         }}
       >
-        {isOpen ? <X size={28} /> : <MessageCircle size={28} />}
+        {isOpen ? <X size={24} /> : <MessageCircle size={24} />}
       </button>
 
       {/* Chat Panel */}

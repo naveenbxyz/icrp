@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { CheckCircle2, XCircle, AlertCircle, Clock, Mail, Send, X, FileText, Download } from 'lucide-react'
+import { CheckCircle2, XCircle, AlertCircle, Clock, Mail, Send, X, FileText, Download, Upload } from 'lucide-react'
 
 interface DocumentRequirement {
   id: number
@@ -134,13 +134,13 @@ FM Client Readiness Team`
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <Mail size={20} style={{ color: '#3b82f6' }} />
+              <Mail size={20} className="text-info" />
             </div>
             <div>
-              <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#111827', margin: 0 }}>
+              <h2 className="text-foreground" style={{ fontSize: '20px', fontWeight: '600', margin: 0 }}>
                 Request Documents from Client
               </h2>
-              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
+              <p className="text-muted-foreground" style={{ fontSize: '13px', marginTop: '4px' }}>
                 Sending to {clientName} - {selectedDocuments.length} documents
               </p>
             </div>
@@ -158,7 +158,7 @@ FM Client Readiness Team`
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
           >
-            <X size={20} />
+            <X size={24} />
           </button>
         </div>
 
@@ -401,23 +401,21 @@ export default function DocumentRequirementsTab({ clientId, clientName }: Docume
 
   const getStatusBadge = (status: string) => {
     const badges = {
-      compliant: { bg: '#d1fae5', text: '#065f46', icon: <CheckCircle2 size={14} />, label: 'Compliant' },
-      uploaded: { bg: '#dbeafe', text: '#1e40af', icon: <Clock size={14} />, label: 'Uploaded' },
-      missing: { bg: '#fee2e2', text: '#991b1b', icon: <XCircle size={14} />, label: 'Missing' },
-      expired: { bg: '#fef3c7', text: '#92400e', icon: <AlertCircle size={14} />, label: 'Expired' },
-      pending_review: { bg: '#f3e8ff', text: '#6b21a8', icon: <Clock size={14} />, label: 'Pending Review' }
+      compliant: { className: 'bg-success/10 text-success', icon: <CheckCircle2 size={16} />, label: 'Compliant' },
+      uploaded: { className: 'bg-info/10 text-info', icon: <Clock size={16} />, label: 'Uploaded' },
+      missing: { className: 'bg-destructive/10 text-destructive', icon: <XCircle size={16} />, label: 'Missing' },
+      expired: { className: 'bg-warning/10 text-warning', icon: <AlertCircle size={16} />, label: 'Expired' },
+      pending_review: { className: 'bg-accent/10 text-accent', icon: <Clock size={16} />, label: 'Pending Review' }
     }
 
     const badge = badges[status as keyof typeof badges] || badges.missing
 
     return (
-      <div style={{
+      <div className={badge.className} style={{
         display: 'inline-flex',
         alignItems: 'center',
         gap: '6px',
         padding: '4px 10px',
-        backgroundColor: badge.bg,
-        color: badge.text,
         borderRadius: '6px',
         fontSize: '12px',
         fontWeight: '600'
@@ -489,24 +487,24 @@ export default function DocumentRequirementsTab({ clientId, clientName }: Docume
       {/* Summary Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
         <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', fontWeight: '500' }}>TOTAL REQUIREMENTS</div>
-          <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#111827' }}>{summary.total_requirements}</div>
+          <div className="text-muted-foreground" style={{ fontSize: '12px', marginBottom: '8px', fontWeight: '500' }}>TOTAL REQUIREMENTS</div>
+          <div className="text-foreground" style={{ fontSize: '32px', fontWeight: 'bold' }}>{summary.total_requirements}</div>
         </div>
         <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #d1fae5' }}>
-          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', fontWeight: '500' }}>COMPLIANT</div>
-          <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#10b981' }}>{summary.compliant_count}</div>
+          <div className="text-muted-foreground" style={{ fontSize: '12px', marginBottom: '8px', fontWeight: '500' }}>COMPLIANT</div>
+          <div className="text-success" style={{ fontSize: '32px', fontWeight: 'bold' }}>{summary.compliant_count}</div>
         </div>
         <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #fee2e2' }}>
-          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', fontWeight: '500' }}>MISSING</div>
-          <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#ef4444' }}>{summary.missing_count}</div>
+          <div className="text-muted-foreground" style={{ fontSize: '12px', marginBottom: '8px', fontWeight: '500' }}>MISSING</div>
+          <div className="text-destructive" style={{ fontSize: '32px', fontWeight: 'bold' }}>{summary.missing_count}</div>
         </div>
         <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #fef3c7' }}>
-          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', fontWeight: '500' }}>EXPIRED</div>
-          <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#f59e0b' }}>{summary.expired_count}</div>
+          <div className="text-muted-foreground" style={{ fontSize: '12px', marginBottom: '8px', fontWeight: '500' }}>EXPIRED</div>
+          <div className="text-warning" style={{ fontSize: '32px', fontWeight: 'bold' }}>{summary.expired_count}</div>
         </div>
         <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', fontWeight: '500' }}>COMPLIANCE</div>
-          <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#3b82f6' }}>{summary.compliance_percentage.toFixed(0)}%</div>
+          <div className="text-muted-foreground" style={{ fontSize: '12px', marginBottom: '8px', fontWeight: '500' }}>COMPLIANCE</div>
+          <div className="text-info" style={{ fontSize: '32px', fontWeight: 'bold' }}>{summary.compliance_percentage.toFixed(0)}%</div>
         </div>
       </div>
 
@@ -542,8 +540,6 @@ export default function DocumentRequirementsTab({ clientId, clientName }: Docume
                   padding: '10px 20px',
                   fontSize: '14px',
                   fontWeight: '600',
-                  backgroundColor: '#3b82f6',
-                  color: 'white',
                   border: 'none',
                   borderRadius: '8px',
                   cursor: 'pointer',
@@ -551,6 +547,7 @@ export default function DocumentRequirementsTab({ clientId, clientName }: Docume
                   alignItems: 'center',
                   gap: '8px'
                 }}
+                className="bg-info text-white"
               >
                 <Mail size={16} />
                 Request Selected ({selectedDocs.size})
@@ -559,12 +556,11 @@ export default function DocumentRequirementsTab({ clientId, clientName }: Docume
             {summary.missing_count > 0 && (
               <button
                 onClick={handleBulkEmail}
+                className="bg-destructive text-white"
                 style={{
                   padding: '10px 20px',
                   fontSize: '14px',
                   fontWeight: '600',
-                  backgroundColor: '#ef4444',
-                  color: 'white',
                   border: 'none',
                   borderRadius: '8px',
                   cursor: 'pointer',
@@ -602,8 +598,8 @@ export default function DocumentRequirementsTab({ clientId, clientName }: Docume
         <div key={regime.regime} style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', marginBottom: '20px', overflow: 'hidden' }}>
           <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb', backgroundColor: '#fafafa' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: 0 }}>{regime.regime} Regime</h3>
-              <div style={{ display: 'flex', gap: '16px', fontSize: '13px', color: '#6b7280' }}>
+              <h3 className="text-foreground" style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>{regime.regime} Regime</h3>
+              <div className="text-muted-foreground" style={{ display: 'flex', gap: '16px', fontSize: '13px' }}>
                 <span><strong>{regime.compliant_count}</strong> Compliant</span>
                 <span><strong>{regime.missing_count}</strong> Missing</span>
                 <span><strong>{regime.expired_count}</strong> Expired</span>
@@ -615,19 +611,20 @@ export default function DocumentRequirementsTab({ clientId, clientName }: Docume
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>Select</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>Document Name</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>Category</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>Status</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>Uploaded File</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>Last Reminder</th>
+                  <th className="text-muted-foreground" style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>Select</th>
+                  <th className="text-muted-foreground" style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>Document Name</th>
+                  <th className="text-muted-foreground" style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>Category</th>
+                  <th className="text-muted-foreground" style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>Status</th>
+                  <th className="text-muted-foreground" style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>Uploaded File</th>
+                  <th className="text-muted-foreground" style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>Last Reminder</th>
+                  <th className="text-muted-foreground" style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {regime.requirements.map(req => (
                   <tr key={req.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                     <td style={{ padding: '16px' }}>
-                      {req.status === 'missing' && (
+                      {(req.status === 'missing' || req.status === 'expired') && (
                         <input
                           type="checkbox"
                           checked={selectedDocs.has(req.id)}
@@ -637,38 +634,79 @@ export default function DocumentRequirementsTab({ clientId, clientName }: Docume
                       )}
                     </td>
                     <td style={{ padding: '16px' }}>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>{req.evidence_name}</div>
-                      {req.description && <div style={{ fontSize: '12px', color: '#6b7280' }}>{req.description}</div>}
+                      <div className="text-foreground" style={{ fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>{req.evidence_name}</div>
+                      {req.description && <div className="text-muted-foreground" style={{ fontSize: '12px' }}>{req.description}</div>}
                       {req.is_mandatory && (
-                        <span style={{ display: 'inline-block', marginTop: '4px', padding: '2px 8px', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '4px', fontSize: '11px', fontWeight: '600' }}>
+                        <span className="bg-destructive/10 text-destructive" style={{ display: 'inline-block', marginTop: '4px', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600' }}>
                           MANDATORY
                         </span>
                       )}
                     </td>
-                    <td style={{ padding: '16px', fontSize: '13px', color: '#6b7280' }}>{req.category}</td>
+                    <td className="text-muted-foreground" style={{ padding: '16px', fontSize: '13px' }}>{req.category}</td>
                     <td style={{ padding: '16px' }}>{getStatusBadge(req.status)}</td>
                     <td style={{ padding: '16px' }}>
                       {req.document_filename ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <FileText size={16} style={{ color: '#3b82f6' }} />
+                          <FileText size={16} className="text-info" />
                           <span style={{ fontSize: '13px', color: '#374151' }}>{req.document_filename}</span>
                         </div>
                       ) : (
-                        <span style={{ fontSize: '13px', color: '#9ca3af' }}>No file</span>
+                        <span className="text-muted-foreground" style={{ fontSize: '13px' }}>No file</span>
                       )}
                     </td>
-                    <td style={{ padding: '16px', fontSize: '13px', color: '#6b7280' }}>
+                    <td className="text-muted-foreground" style={{ padding: '16px', fontSize: '13px' }}>
                       {req.last_reminder_date ? (
                         <div>
                           {new Date(req.last_reminder_date).toLocaleDateString()}
                           {req.reminder_count > 0 && (
-                            <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>
+                            <div className="text-muted-foreground" style={{ fontSize: '11px', marginTop: '2px' }}>
                               {req.reminder_count} reminder{req.reminder_count > 1 ? 's' : ''}
                             </div>
                           )}
                         </div>
                       ) : (
-                        <span style={{ color: '#9ca3af' }}>Not requested</span>
+                        <span className="text-muted-foreground">Not requested</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '16px' }}>
+                      {(req.status === 'missing' || req.status === 'expired') && (
+                        <label style={{ cursor: 'pointer' }}>
+                          <input
+                            type="file"
+                            style={{ display: 'none' }}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) {
+                                console.log(`Upload file for ${req.evidence_name}:`, file)
+                                // TODO: Implement actual file upload
+                                alert(`File upload functionality coming soon!\nFile: ${file.name}\nFor: ${req.evidence_name}`)
+                              }
+                            }}
+                          />
+                          <button
+                            className="bg-primary text-white hover:opacity-80"
+                            style={{
+                              padding: '6px 12px',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              transition: 'opacity 0.2s'
+                            }}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              const input = e.currentTarget.parentElement?.querySelector('input[type="file"]') as HTMLInputElement
+                              input?.click()
+                            }}
+                          >
+                            <Upload size={14} />
+                            Upload
+                          </button>
+                        </label>
                       )}
                     </td>
                   </tr>

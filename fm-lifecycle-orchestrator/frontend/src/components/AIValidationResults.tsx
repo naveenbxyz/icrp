@@ -50,17 +50,17 @@ export default function AIValidationResults({
     const statusConfig = {
       verified: {
         color: '#10b981',
-        icon: <Check size={14} />,
+        icon: <Check size={16} />,
         label: 'Verified'
       },
       needs_review: {
         color: '#f59e0b',
-        icon: <AlertTriangle size={14} />,
+        icon: <AlertTriangle size={16} />,
         label: 'Needs Review'
       },
       failed: {
         color: '#ef4444',
-        icon: <X size={14} />,
+        icon: <X size={16} />,
         label: 'Failed'
       }
     };
@@ -145,7 +145,7 @@ export default function AIValidationResults({
                 alignItems: 'center',
                 gap: '4px'
               }}>
-                <AlertTriangle size={12} />
+                <AlertTriangle size={16} />
                 {entity.issues.join(', ')}
               </div>
             )}
@@ -168,7 +168,7 @@ export default function AIValidationResults({
                 color: '#10b981',
                 fontWeight: '500'
               }}>
-                <Check size={12} />
+                <Check size={16} />
                 Match
               </div>
             ) : (
@@ -180,7 +180,7 @@ export default function AIValidationResults({
                 color: '#f59e0b',
                 fontWeight: '500'
               }}>
-                <AlertTriangle size={12} />
+                <AlertTriangle size={16} />
                 Review
               </div>
             )}
@@ -250,7 +250,7 @@ export default function AIValidationResults({
                 fontSize: '12px',
                 color: '#6b7280'
               }}>
-                <Clock size={14} />
+                <Clock size={16} />
                 Processed in {(validation.processing_time_ms / 1000).toFixed(2)}s
               </div>
             </div>
@@ -272,7 +272,7 @@ export default function AIValidationResults({
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#e5e7eb')}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#f3f4f6')}
           >
-            <X size={20} />
+            <X size={24} />
           </button>
         </div>
 

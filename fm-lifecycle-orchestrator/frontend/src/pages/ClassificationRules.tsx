@@ -220,7 +220,7 @@ export default function ClassificationRules() {
               <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: 0 }}>
                 Classification Rules ({rules.length})
               </h2>
-              <Settings size={18} color="#6b7280" />
+              <Settings size={20} className="text-muted-foreground" />
             </div>
 
             <div style={{ padding: '20px' }}>
@@ -252,9 +252,9 @@ export default function ClassificationRules() {
                           </div>
                         </div>
                         {rule.is_active ? (
-                          <CheckCircle size={18} color="#10b981" />
+                          <CheckCircle size={20} className="text-success" />
                         ) : (
-                          <XCircle size={18} color="#ef4444" />
+                          <XCircle size={20} className="text-destructive" />
                         )}
                       </div>
 
@@ -322,9 +322,9 @@ export default function ClassificationRules() {
                           </div>
                         </div>
                         {evidence.is_active ? (
-                          <CheckCircle size={18} color="#10b981" />
+                          <CheckCircle size={20} className="text-success" />
                         ) : (
-                          <XCircle size={18} color="#ef4444" />
+                          <XCircle size={20} className="text-destructive" />
                         )}
                       </div>
 

@@ -95,19 +95,17 @@ export default function AIDemo() {
           borderRadius: '16px',
           marginBottom: '16px'
         }}>
-          <Sparkles size={32} style={{ color: '#8b5cf6' }} />
+          <Sparkles size={48} className="text-accent" />
         </div>
-        <h1 style={{
+        <h1 className="text-foreground" style={{
           fontSize: '32px',
           fontWeight: '700',
-          color: '#111827',
           marginBottom: '12px'
         }}>
           AI Document Validation Demo
         </h1>
-        <p style={{
+        <p className="text-muted-foreground" style={{
           fontSize: '16px',
-          color: '#6b7280',
           maxWidth: '600px',
           margin: '0 auto'
         }}>
@@ -137,19 +135,17 @@ export default function AIDemo() {
               borderRadius: '12px',
               marginBottom: '16px'
             }}>
-              <Upload size={24} style={{ color: '#6b7280' }} />
+              <Upload size={24} className="text-muted-foreground" />
             </div>
-            <h3 style={{
+            <h3 className="text-foreground" style={{
               fontSize: '18px',
               fontWeight: '600',
-              color: '#111827',
               marginBottom: '8px'
             }}>
               Upload Document
             </h3>
-            <p style={{
+            <p className="text-muted-foreground" style={{
               fontSize: '14px',
-              color: '#6b7280',
               marginBottom: '16px'
             }}>
               PDF, DOC, DOCX, JPG, or PNG (max 10MB)
@@ -162,18 +158,16 @@ export default function AIDemo() {
               style={{ display: 'none' }}
             />
             <label htmlFor="file-upload">
-              <div style={{
+              <div className="bg-accent text-white" style={{
                 display: 'inline-block',
                 padding: '12px 24px',
-                backgroundColor: '#8b5cf6',
-                color: 'white',
                 borderRadius: '8px',
                 fontSize: '14px',
                 fontWeight: '600',
                 cursor: 'pointer'
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#7c3aed')}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#8b5cf6')}>
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}>
                 Choose File
               </div>
             </label>
@@ -190,18 +184,16 @@ export default function AIDemo() {
               borderRadius: '12px',
               marginBottom: '24px'
             }}>
-              <FileText size={24} style={{ color: '#16a34a' }} />
+              <FileText size={24} className="text-success" />
               <div style={{ textAlign: 'left' }}>
-                <div style={{
+                <div className="text-success" style={{
                   fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#166534'
+                  fontWeight: '600'
                 }}>
                   {selectedFile.name}
                 </div>
-                <div style={{
-                  fontSize: '12px',
-                  color: '#16a34a'
+                <div className="text-success" style={{
+                  fontSize: '12px'
                 }}>
                   {(selectedFile.size / 1024).toFixed(1)} KB
                 </div>
@@ -229,21 +221,20 @@ export default function AIDemo() {
 
               <button
                 onClick={handleUploadAndValidate}
+                className="bg-accent text-white"
                 style={{
                   padding: '12px 32px',
                   border: 'none',
-                  backgroundColor: '#8b5cf6',
                   borderRadius: '8px',
                   fontSize: '14px',
                   fontWeight: '600',
-                  color: 'white',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px'
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#7c3aed')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#8b5cf6')}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
               >
                 <Sparkles size={16} />
                 Validate with AI
@@ -289,17 +280,15 @@ export default function AIDemo() {
             <div style={{ fontSize: '32px', marginBottom: '12px' }}>
               {feature.icon}
             </div>
-            <h4 style={{
+            <h4 className="text-foreground" style={{
               fontSize: '14px',
               fontWeight: '600',
-              color: '#111827',
               marginBottom: '8px'
             }}>
               {feature.title}
             </h4>
-            <p style={{
+            <p className="text-muted-foreground" style={{
               fontSize: '12px',
-              color: '#6b7280',
               margin: 0
             }}>
               {feature.description}

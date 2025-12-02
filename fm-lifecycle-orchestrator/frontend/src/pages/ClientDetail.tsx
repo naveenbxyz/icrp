@@ -7,7 +7,6 @@ import RegulatoryClassificationCard from '../components/RegulatoryClassification
 import RiskBadge from '../components/RiskBadge.tsx'
 import { AlertCircle, CheckCircle2, XCircle, AlertTriangle, RefreshCw, FileCheck, LayoutDashboard, Shield, FileText, ListTodo, ArrowLeft, Upload, Send } from 'lucide-react'
 import DocumentRequirementsTab from '../components/DocumentRequirementsTab.tsx'
-import { InternalDocumentBrowser } from '../components/InternalDocumentBrowser.tsx'
 
 const STAGES = [
   'Legal Entity Setup',
@@ -42,7 +41,7 @@ function DocumentRequirementsLane({ clientId }: { clientId: number }) {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '32px', color: '#6b7280' }}>
+      <div className="text-muted-foreground" style={{ textAlign: 'center', padding: '32px' }}>
         <div style={{ fontSize: '14px' }}>Loading requirements...</div>
       </div>
     )
@@ -50,7 +49,7 @@ function DocumentRequirementsLane({ clientId }: { clientId: number }) {
 
   if (!requirements || requirements.regimes?.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '32px', color: '#6b7280', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px dashed #d1d5db' }}>
+      <div className="text-muted-foreground" style={{ textAlign: 'center', padding: '32px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px dashed #d1d5db' }}>
         <div style={{ fontSize: '14px' }}>No requirements yet</div>
       </div>
     )
@@ -64,30 +63,29 @@ function DocumentRequirementsLane({ clientId }: { clientId: number }) {
       <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>Overall Compliance</div>
-          <div style={{
+          <div className={summary.compliance_percentage >= 80 ? 'text-success' : summary.compliance_percentage >= 50 ? 'text-warning' : 'text-destructive'} style={{
             fontSize: '18px',
-            fontWeight: '700',
-            color: summary.compliance_percentage >= 80 ? '#059669' : summary.compliance_percentage >= 50 ? '#f59e0b' : '#dc2626'
+            fontWeight: '700'
           }}>
             {summary.compliance_percentage}%
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', fontSize: '11px' }}>
           <div style={{ padding: '6px', backgroundColor: 'white', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
-            <div style={{ color: '#6b7280' }}>Compliant</div>
-            <div style={{ fontWeight: '600', color: '#059669' }}>{summary.compliant_count}</div>
+            <div className="text-muted-foreground">Compliant</div>
+            <div className="text-success" style={{ fontWeight: '600' }}>{summary.compliant_count}</div>
           </div>
           <div style={{ padding: '6px', backgroundColor: 'white', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
-            <div style={{ color: '#6b7280' }}>Missing</div>
-            <div style={{ fontWeight: '600', color: '#dc2626' }}>{summary.missing_count}</div>
+            <div className="text-muted-foreground">Missing</div>
+            <div className="text-destructive" style={{ fontWeight: '600' }}>{summary.missing_count}</div>
           </div>
           <div style={{ padding: '6px', backgroundColor: 'white', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
-            <div style={{ color: '#6b7280' }}>Expired</div>
-            <div style={{ fontWeight: '600', color: '#f59e0b' }}>{summary.expired_count}</div>
+            <div className="text-muted-foreground">Expired</div>
+            <div className="text-warning" style={{ fontWeight: '600' }}>{summary.expired_count}</div>
           </div>
           <div style={{ padding: '6px', backgroundColor: 'white', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
-            <div style={{ color: '#6b7280' }}>Pending Review</div>
-            <div style={{ fontWeight: '600', color: '#3b82f6' }}>{summary.pending_review_count}</div>
+            <div className="text-muted-foreground">Pending Review</div>
+            <div className="text-info" style={{ fontWeight: '600' }}>{summary.pending_review_count}</div>
           </div>
         </div>
       </div>
@@ -96,10 +94,10 @@ function DocumentRequirementsLane({ clientId }: { clientId: number }) {
       {requirements.regimes.map((regime: any) => (
         <div key={regime.regime} style={{ padding: '12px', backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
           <div style={{ fontSize: '12px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>{regime.regime}</div>
-          <div style={{ fontSize: '11px', color: '#6b7280' }}>
+          <div className="text-muted-foreground" style={{ fontSize: '11px' }}>
             {regime.compliant_count}/{regime.total_requirements} compliant
             {regime.missing_count > 0 && (
-              <span style={{ marginLeft: '8px', color: '#dc2626', fontWeight: '600' }}>
+              <span className="text-destructive" style={{ marginLeft: '8px', fontWeight: '600' }}>
                 • {regime.missing_count} missing
               </span>
             )}
@@ -108,21 +106,18 @@ function DocumentRequirementsLane({ clientId }: { clientId: number }) {
           <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {regime.requirements.slice(0, 3).map((req: any) => (
               <div key={req.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '10px' }}>
-                <span style={{
+                <span className={req.status === 'compliant' ? 'bg-success' : req.status === 'missing' ? 'bg-destructive' : req.status === 'expired' ? 'bg-warning' : 'bg-info'} style={{
                   width: '6px',
                   height: '6px',
-                  borderRadius: '50%',
-                  backgroundColor: req.status === 'compliant' ? '#10b981' : req.status === 'missing' ? '#ef4444' : req.status === 'expired' ? '#f59e0b' : '#3b82f6'
+                  borderRadius: '50%'
                 }} />
-                <span style={{ color: '#6b7280', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span className="text-muted-foreground" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {req.evidence_name}
                 </span>
-                <span style={{
+                <span className={req.status === 'compliant' ? 'bg-success/10 text-success' : req.status === 'missing' ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'} style={{
                   fontSize: '9px',
                   padding: '2px 6px',
                   borderRadius: '4px',
-                  backgroundColor: req.status === 'compliant' ? '#d1fae5' : req.status === 'missing' ? '#fee2e2' : '#fef3c7',
-                  color: req.status === 'compliant' ? '#065f46' : req.status === 'missing' ? '#991b1b' : '#92400e',
                   textTransform: 'capitalize'
                 }}>
                   {req.status}
@@ -130,7 +125,7 @@ function DocumentRequirementsLane({ clientId }: { clientId: number }) {
               </div>
             ))}
             {regime.requirements.length > 3 && (
-              <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '4px' }}>
+              <div className="text-muted-foreground" style={{ fontSize: '10px', marginTop: '4px' }}>
                 +{regime.requirements.length - 3} more requirements
               </div>
             )}
@@ -178,8 +173,8 @@ function DataQualityWarnings({
       marginTop: '8px'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-        <AlertTriangle size={18} color="#f59e0b" />
-        <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#92400e', margin: 0 }}>
+        <AlertTriangle size={20} className="text-warning" />
+        <h3 className="text-warning" style={{ fontSize: '14px', fontWeight: '600', margin: 0 }}>
           Data Quality Warnings ({allWarnings.reduce((sum, w) => sum + w.warnings.length, 0)})
         </h3>
       </div>
@@ -189,23 +184,21 @@ function DataQualityWarnings({
           <div key={item.regime} style={{ padding: '12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #fcd34d' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <div style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>{item.regime}</div>
-              <div style={{
+              <div className={item.score >= 70 ? 'bg-success/10 text-success' : item.score >= 40 ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-destructive'} style={{
                 fontSize: '11px',
                 padding: '3px 8px',
                 borderRadius: '4px',
-                backgroundColor: item.score >= 70 ? '#d1fae5' : item.score >= 40 ? '#fef3c7' : '#fee2e2',
-                color: item.score >= 70 ? '#065f46' : item.score >= 40 ? '#92400e' : '#991b1b',
                 fontWeight: '600'
               }}>
                 {item.score}% Quality
               </div>
             </div>
-            <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '11px', color: '#6b7280' }}>
+            <ul className="text-muted-foreground" style={{ margin: 0, paddingLeft: '20px', fontSize: '11px' }}>
               {item.warnings.slice(0, 3).map((warning, idx) => (
                 <li key={idx} style={{ marginBottom: '4px' }}>{warning}</li>
               ))}
               {item.warnings.length > 3 && (
-                <li style={{ color: '#9ca3af', fontStyle: 'italic' }}>
+                <li className="text-muted-foreground" style={{ fontStyle: 'italic' }}>
                   +{item.warnings.length - 3} more warnings
                 </li>
               )}
@@ -338,56 +331,56 @@ function RegimeQualificationTab({
 
                 {/* Client Attributes Used for Evaluation */}
                 {elig.client_attributes && (
-                  <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#fffbeb', borderRadius: '8px', border: '1px solid #fbbf24' }}>
-                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#92400e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div className="mb-4 p-3 bg-muted/30 rounded-lg border border-border">
+                    <div className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
                       <span>🔍</span>
                       Evaluated Attributes (Snapshot)
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', fontSize: '11px' }}>
+                    <div className="grid grid-cols-3 gap-2 text-[11px]">
                       {elig.client_attributes.account_type && (
                         <div>
-                          <span style={{ fontWeight: '600', color: '#78350f' }}>Account Type:</span>{' '}
-                          <span style={{ color: '#111827', backgroundColor: '#fef3c7', padding: '2px 6px', borderRadius: '4px' }}>
+                          <span className="font-semibold text-muted-foreground">Account Type:</span>{' '}
+                          <span className="text-foreground bg-muted px-1.5 py-0.5 rounded">
                             {elig.client_attributes.account_type}
                           </span>
                         </div>
                       )}
                       {elig.client_attributes.booking_location && (
                         <div>
-                          <span style={{ fontWeight: '600', color: '#78350f' }}>Booking Location:</span>{' '}
-                          <span style={{ color: '#111827', backgroundColor: '#fef3c7', padding: '2px 6px', borderRadius: '4px' }}>
+                          <span className="font-semibold text-muted-foreground">Booking Location:</span>{' '}
+                          <span className="text-foreground bg-muted px-1.5 py-0.5 rounded">
                             {elig.client_attributes.booking_location}
                           </span>
                         </div>
                       )}
                       {elig.client_attributes.product_grid?.product_group && (
                         <div>
-                          <span style={{ fontWeight: '600', color: '#78350f' }}>Product Group:</span>{' '}
-                          <span style={{ color: '#111827', backgroundColor: '#fef3c7', padding: '2px 6px', borderRadius: '4px' }}>
+                          <span className="font-semibold text-muted-foreground">Product Group:</span>{' '}
+                          <span className="text-foreground bg-muted px-1.5 py-0.5 rounded">
                             {elig.client_attributes.product_grid.product_group}
                           </span>
                         </div>
                       )}
                       {elig.client_attributes.product_grid?.product_type && (
                         <div>
-                          <span style={{ fontWeight: '600', color: '#78350f' }}>Product Type:</span>{' '}
-                          <span style={{ color: '#111827', backgroundColor: '#fef3c7', padding: '2px 6px', borderRadius: '4px' }}>
+                          <span className="font-semibold text-muted-foreground">Product Type:</span>{' '}
+                          <span className="text-foreground bg-muted px-1.5 py-0.5 rounded">
                             {elig.client_attributes.product_grid.product_type}
                           </span>
                         </div>
                       )}
                       {elig.client_attributes.product_grid?.product_status && (
                         <div>
-                          <span style={{ fontWeight: '600', color: '#78350f' }}>Product Status:</span>{' '}
-                          <span style={{ color: '#111827', backgroundColor: '#fef3c7', padding: '2px 6px', borderRadius: '4px' }}>
+                          <span className="font-semibold text-muted-foreground">Product Status:</span>{' '}
+                          <span className="text-foreground bg-muted px-1.5 py-0.5 rounded">
                             {elig.client_attributes.product_grid.product_status}
                           </span>
                         </div>
                       )}
                       {elig.client_attributes.product_grid?.bank_entity && (
                         <div>
-                          <span style={{ fontWeight: '600', color: '#78350f' }}>Bank Entity:</span>{' '}
-                          <span style={{ color: '#111827', backgroundColor: '#fef3c7', padding: '2px 6px', borderRadius: '4px' }}>
+                          <span className="font-semibold text-muted-foreground">Bank Entity:</span>{' '}
+                          <span className="text-foreground bg-muted px-1.5 py-0.5 rounded">
                             {elig.client_attributes.product_grid.bank_entity}
                           </span>
                         </div>
@@ -1137,10 +1130,10 @@ export default function ClientDetail() {
   }
 
   const tabs: { id: TabType; label: string; icon: JSX.Element; badge?: string | null }[] = [
-    { id: 'overview', label: 'Overview', icon: <LayoutDashboard size={18} /> },
-    { id: 'regulatory', label: 'Regulatory Due Diligence', icon: <FileCheck size={18} /> },
-    { id: 'documents', label: 'Document Requirements', icon: <FileText size={18} /> },
-    { id: 'tasks', label: 'Tasks', icon: <ListTodo size={18} /> }
+    { id: 'overview', label: 'Overview', icon: <LayoutDashboard size={20} /> },
+    { id: 'regulatory', label: 'Regulatory Due Diligence', icon: <FileCheck size={20} /> },
+    { id: 'documents', label: 'Document Requirements', icon: <FileText size={20} /> },
+    { id: 'tasks', label: 'Tasks', icon: <ListTodo size={20} /> }
   ]
 
   return (
@@ -1632,7 +1625,7 @@ export default function ClientDetail() {
 
               {/* Client Attributes Section */}
               {client?.client_attributes && (
-                <div style={{ marginTop: '24px', padding: '20px', backgroundColor: '#fefce8', borderRadius: '12px', border: '2px solid #fde047' }}>
+                <div style={{ marginTop: '24px', padding: '20px', backgroundColor: '#f0f9ff', borderRadius: '12px', border: '2px solid #0ea5e9' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
                     <span style={{ fontSize: '24px' }}>🏢</span>
                     <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: 0 }}>
@@ -1642,8 +1635,8 @@ export default function ClientDetail() {
                       fontSize: '11px',
                       fontWeight: '600',
                       padding: '4px 10px',
-                      backgroundColor: '#fef3c7',
-                      color: '#92400e',
+                      backgroundColor: '#bae6fd',
+                      color: '#075985',
                       borderRadius: '12px',
                       textTransform: 'uppercase',
                       letterSpacing: '0.5px'
@@ -1654,8 +1647,8 @@ export default function ClientDetail() {
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
                     {/* Left Column: Basic Attributes */}
-                    <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #fde047' }}>
-                      <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#78350f', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #7dd3fc' }}>
+                      <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#0c4a6e', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span>📊</span>
                         Basic Attributes
                       </h4>
@@ -1665,7 +1658,7 @@ export default function ClientDetail() {
                           <div style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
                             Account Type
                           </div>
-                          <div style={{ fontSize: '13px', fontWeight: '500', color: '#111827', padding: '6px 10px', backgroundColor: '#fef9c3', borderRadius: '6px', border: '1px solid #fde047' }}>
+                          <div style={{ fontSize: '13px', fontWeight: '500', color: '#111827', padding: '6px 10px', backgroundColor: '#e0f2fe', borderRadius: '6px', border: '1px solid #7dd3fc' }}>
                             {client.client_attributes.account_type}
                           </div>
                         </div>
@@ -1676,7 +1669,7 @@ export default function ClientDetail() {
                           <div style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
                             Booking Location
                           </div>
-                          <div style={{ fontSize: '13px', fontWeight: '500', color: '#111827', padding: '6px 10px', backgroundColor: '#fef9c3', borderRadius: '6px', border: '1px solid #fde047' }}>
+                          <div style={{ fontSize: '13px', fontWeight: '500', color: '#111827', padding: '6px 10px', backgroundColor: '#e0f2fe', borderRadius: '6px', border: '1px solid #7dd3fc' }}>
                             {client.client_attributes.booking_location}
                           </div>
                         </div>
@@ -1685,8 +1678,8 @@ export default function ClientDetail() {
 
                     {/* Right Column: Product Grid */}
                     {client.client_attributes.product_grid && (
-                      <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #fde047' }}>
-                        <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#78350f', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #7dd3fc' }}>
+                        <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#0c4a6e', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span>🎯</span>
                           Product Grid
                         </h4>
@@ -1738,8 +1731,8 @@ export default function ClientDetail() {
                     )}
                   </div>
 
-                  <div style={{ marginTop: '12px', padding: '10px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #fde047' }}>
-                    <p style={{ fontSize: '11px', color: '#78350f', margin: 0, fontStyle: 'italic' }}>
+                  <div style={{ marginTop: '12px', padding: '10px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #7dd3fc' }}>
+                    <p style={{ fontSize: '11px', color: '#0c4a6e', margin: 0, fontStyle: 'italic' }}>
                       💡 <strong>Note:</strong> These attributes are evaluated against classification rules to determine regime eligibility.
                       View detailed rule evaluation in the "Regime Qualification" tab.
                     </p>
@@ -1980,14 +1973,14 @@ export default function ClientDetail() {
 
                             {/* Evaluated Attributes Section */}
                             {elig.client_attributes && (
-                              <div style={{ marginTop: '16px', padding: '16px', backgroundColor: '#fefce8', borderRadius: '10px', border: '1px solid #fde047' }}>
-                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#78350f', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ marginTop: '16px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '10px', border: '1px solid #e5e7eb' }}>
+                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                   <span>🔍</span>
                                   Evaluated Attributes
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
                                   {elig.client_attributes.account_type && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #fde047' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
                                       <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
                                       <div style={{ flex: 1 }}>
                                         <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Account Type</div>
@@ -1996,7 +1989,7 @@ export default function ClientDetail() {
                                     </div>
                                   )}
                                   {elig.client_attributes.booking_location && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #fde047' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
                                       <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
                                       <div style={{ flex: 1 }}>
                                         <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Booking Location</div>
@@ -2005,7 +1998,7 @@ export default function ClientDetail() {
                                     </div>
                                   )}
                                   {elig.client_attributes.product_grid?.product_group && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #fde047' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
                                       <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
                                       <div style={{ flex: 1 }}>
                                         <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Product Group</div>
@@ -2014,7 +2007,7 @@ export default function ClientDetail() {
                                     </div>
                                   )}
                                   {elig.client_attributes.product_grid?.product_category && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #fde047' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
                                       <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
                                       <div style={{ flex: 1 }}>
                                         <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Product Category</div>
@@ -2023,7 +2016,7 @@ export default function ClientDetail() {
                                     </div>
                                   )}
                                   {elig.client_attributes.product_grid?.product_type && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #fde047' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
                                       <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
                                       <div style={{ flex: 1 }}>
                                         <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Product Type</div>
@@ -2032,7 +2025,7 @@ export default function ClientDetail() {
                                     </div>
                                   )}
                                   {elig.client_attributes.product_grid?.product_status && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #fde047' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
                                       <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
                                       <div style={{ flex: 1 }}>
                                         <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Product Status</div>
@@ -2041,7 +2034,7 @@ export default function ClientDetail() {
                                     </div>
                                   )}
                                   {elig.client_attributes.product_grid?.bank_entity && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #fde047' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
                                       <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
                                       <div style={{ flex: 1 }}>
                                         <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Bank Entity</div>
@@ -2054,7 +2047,7 @@ export default function ClientDetail() {
                             )}
 
                             {/* Matched and Unmatched Rules */}
-                            <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                            <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: elig.unmatched_rules && elig.unmatched_rules.length > 0 ? '1fr 1fr' : '1fr', gap: '20px' }}>
                               <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '10px', border: '2px solid #86efac' }}>
                                 <div style={{ fontSize: '14px', fontWeight: '600', color: '#065f46', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                   <span style={{ fontSize: '16px' }}>✅</span>
@@ -2074,12 +2067,12 @@ export default function ClientDetail() {
                                 )}
                               </div>
 
-                              <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '10px', border: '2px solid #fca5a5' }}>
-                                <div style={{ fontSize: '14px', fontWeight: '600', color: '#991b1b', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <span style={{ fontSize: '16px' }}>❌</span>
-                                  Unmatched Rules ({elig.unmatched_rules?.length || 0})
-                                </div>
-                                {elig.unmatched_rules && elig.unmatched_rules.length > 0 ? (
+                              {elig.unmatched_rules && elig.unmatched_rules.length > 0 && (
+                                <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '10px', border: '2px solid #fca5a5' }}>
+                                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#991b1b', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ fontSize: '16px' }}>❌</span>
+                                    Unmatched Rules ({elig.unmatched_rules.length})
+                                  </div>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                     {elig.unmatched_rules.map((rule, idx) => (
                                       <div key={idx} style={{ padding: '10px', backgroundColor: '#fef2f2', borderRadius: '6px', border: '1px solid #fca5a5' }}>
@@ -2096,10 +2089,8 @@ export default function ClientDetail() {
                                       </div>
                                     ))}
                                   </div>
-                                ) : (
-                                  <div style={{ fontSize: '12px', color: '#6b7280', fontStyle: 'italic' }}>All rules matched</div>
-                                )}
-                              </div>
+                                </div>
+                              )}
                             </div>
 
                             {/* Data Quality Warnings */}
@@ -2172,10 +2163,10 @@ export default function ClientDetail() {
                 <div style={{ marginBottom: '20px' }}>
                   <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Send size={20} className="text-blue-600" />
-                    CX Integration & Publishing
+                    Client Central Integration
                   </h3>
                   <p style={{ fontSize: '14px', color: '#6b7280' }}>
-                    Publish classification results to CX system for downstream processing
+                    Publish classification results to Client Central system for downstream processing
                   </p>
                 </div>
 
@@ -2187,7 +2178,7 @@ export default function ClientDetail() {
                           <CheckCircle2 size={20} className="text-green-600" />
                           <div>
                             <div style={{ fontSize: '14px', fontWeight: '600', color: '#065f46' }}>
-                              Classification Published to CX
+                              Classification Published to Client Central
                             </div>
                             <div style={{ fontSize: '12px', color: '#047857', marginTop: '4px' }}>
                               Last synced: {new Date(cxSyncStatus.cx_sync_date).toLocaleString()}
@@ -2195,7 +2186,7 @@ export default function ClientDetail() {
                           </div>
                         </div>
                         <div style={{ fontSize: '13px', color: '#065f46', marginLeft: '32px' }}>
-                          <div>CX Reference ID: <span style={{ fontFamily: 'monospace', fontWeight: '600' }}>{cxSyncStatus.cx_reference_id}</span></div>
+                          <div>Client Central Reference ID: <span style={{ fontFamily: 'monospace', fontWeight: '600' }}>{cxSyncStatus.cx_reference_id}</span></div>
                           <div style={{ marginTop: '4px' }}>Regimes Classified: {cxSyncStatus.regimes_classified}</div>
                         </div>
                       </div>
@@ -2208,7 +2199,7 @@ export default function ClientDetail() {
                               Classification Not Yet Published
                             </div>
                             <div style={{ fontSize: '12px', color: '#b45309', marginTop: '4px' }}>
-                              Classification results are available but have not been sent to CX system
+                              Classification results are available but have not been sent to Client Central system
                             </div>
                           </div>
                         </div>
@@ -2256,12 +2247,12 @@ export default function ClientDetail() {
                       {publishingToCX ? (
                         <>
                           <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                          Publishing to CX...
+                          Publishing to Client Central...
                         </>
                       ) : (
                         <>
                           <Send size={16} />
-                          {cxSyncStatus?.cx_sync_status === 'synced' ? 'Re-publish to CX' : 'Publish Classification to CX'}
+                          {cxSyncStatus?.cx_sync_status === 'synced' ? 'Re-publish to Client Central' : 'Publish Classification to Client Central'}
                         </>
                       )}
                     </button>
@@ -2345,19 +2336,7 @@ export default function ClientDetail() {
               </div>
             )}
 
-            {/* Internal Document Browser */}
-            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '2px solid #e5e7eb' }}>
-              <InternalDocumentBrowser
-                clientId={Number(clientId)}
-                legalEntityId={client?.legal_entity_id}
-                onDocumentUploaded={() => {
-                  // Refresh document validation after upload
-                  fetchDocumentValidation()
-                }}
-              />
-            </div>
-
-            {/* Existing Document Requirements Tab */}
+            {/* Document Requirements Tab */}
             <DocumentRequirementsTab clientId={Number(clientId)} clientName={client.name} />
           </div>
         )}

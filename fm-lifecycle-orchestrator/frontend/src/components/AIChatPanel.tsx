@@ -151,7 +151,7 @@ export default function AIChatPanel({ clientId, clientName, onClose }: AIChatPan
           onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)')}
           onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)')}
         >
-          <X size={18} />
+          <X size={20} />
         </button>
       </div>
 
@@ -163,13 +163,12 @@ export default function AIChatPanel({ clientId, clientName, onClose }: AIChatPan
         backgroundColor: '#f9fafb'
       }}>
         {messages.length === 0 ? (
-          <div style={{
+          <div className="text-muted-foreground" style={{
             textAlign: 'center',
-            padding: '40px 20px',
-            color: '#6b7280'
+            padding: '40px 20px'
           }}>
-            <Sparkles size={48} style={{ color: '#8b5cf6', margin: '0 auto 16px' }} />
-            <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
+            <Sparkles size={48} className="text-accent" style={{ margin: '0 auto 16px' }} />
+            <h4 className="text-foreground" style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>
               Welcome to AI Assistant
             </h4>
             <p style={{ fontSize: '14px', margin: 0 }}>
@@ -186,12 +185,10 @@ export default function AIChatPanel({ clientId, clientName, onClose }: AIChatPan
                 justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start'
               }}
             >
-              <div style={{
+              <div className={message.role === 'user' ? 'bg-accent text-white' : 'bg-white text-foreground'} style={{
                 maxWidth: '80%',
                 padding: '12px 16px',
                 borderRadius: '12px',
-                backgroundColor: message.role === 'user' ? '#8b5cf6' : 'white',
-                color: message.role === 'user' ? 'white' : '#111827',
                 fontSize: '14px',
                 lineHeight: '1.5',
                 boxShadow: message.role === 'assistant' ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none'
@@ -298,36 +295,38 @@ export default function AIChatPanel({ clientId, clientName, onClose }: AIChatPan
               outline: 'none',
               transition: 'border-color 0.2s'
             }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = '#8b5cf6')}
-            onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+            onFocus={(e) => { e.currentTarget.classList.add('border-accent') }}
+            onBlur={(e) => {
+              e.currentTarget.classList.remove('border-accent')
+              e.currentTarget.style.borderColor = '#d1d5db'
+            }}
           />
           <button
             type="submit"
             disabled={!inputValue.trim() || isLoading}
+            className={inputValue.trim() && !isLoading ? 'bg-accent text-white' : 'bg-gray-300 text-white'}
             style={{
               padding: '10px',
-              backgroundColor: inputValue.trim() && !isLoading ? '#8b5cf6' : '#d1d5db',
               border: 'none',
               borderRadius: '8px',
               cursor: inputValue.trim() && !isLoading ? 'pointer' : 'not-allowed',
-              color: 'white',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'background-color 0.2s'
+              transition: 'opacity 0.2s'
             }}
             onMouseEnter={(e) => {
               if (inputValue.trim() && !isLoading) {
-                e.currentTarget.style.backgroundColor = '#7c3aed';
+                e.currentTarget.style.opacity = '0.9';
               }
             }}
             onMouseLeave={(e) => {
               if (inputValue.trim() && !isLoading) {
-                e.currentTarget.style.backgroundColor = '#8b5cf6';
+                e.currentTarget.style.opacity = '1';
               }
             }}
           >
-            <Send size={18} />
+            <Send size={20} />
           </button>
         </div>
       </form>

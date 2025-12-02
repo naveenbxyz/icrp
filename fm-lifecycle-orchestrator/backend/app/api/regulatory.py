@@ -31,11 +31,13 @@ def get_client_regulatory_classifications(client_id: int, db: Session = Depends(
             "regime": c.regime,
             "framework": c.framework.value if hasattr(c.framework, 'value') else c.framework,
             "classification": c.classification,
-            "status": c.validation_status.value if hasattr(c.validation_status, 'value') else str(c.validation_status),
-            "assigned_date": c.classification_date.isoformat() if c.classification_date else None,
-            "review_date": c.last_review_date.isoformat() if c.last_review_date else None,
+            "validation_status": c.validation_status.value if hasattr(c.validation_status, 'value') else str(c.validation_status),
+            "classification_date": c.classification_date.isoformat() if c.classification_date else None,
+            "last_review_date": c.last_review_date.isoformat() if c.last_review_date else None,
             "next_review_date": c.next_review_date.isoformat() if c.next_review_date else None,
-            "notes": c.validation_notes
+            "validation_notes": c.validation_notes,
+            "document_count": len(c.documents) if hasattr(c, 'documents') else 0,
+            "additional_data": {}
         }
         for c in classifications
     ]
