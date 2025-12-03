@@ -627,6 +627,13 @@ When answering:
 - Keep responses concise but informative (2-3 sentences usually)
 - Use professional, friendly language
 - If asked about data not in the context, say so clearly
+- Format your responses using markdown for better readability:
+  * Use **bold** for important terms or values
+  * Use bullet points (- or *) for lists
+  * Use numbered lists (1., 2., etc.) for sequential steps
+  * Use `code formatting` for technical terms, IDs, or values
+  * Use headings (## or ###) to organize longer responses
+  * Use tables for comparing multiple items
 
 CLIENT DATA CONTEXT:
 {rag_context}
@@ -703,6 +710,12 @@ When answering:
 - Explain system features and capabilities when asked
 - Keep responses concise but informative (2-3 sentences usually)
 - If asked about a specific client, mention that you need client context to provide specific information
+- Format your responses using markdown for better readability:
+  * Use **bold** for important terms or features
+  * Use bullet points (- or *) for lists
+  * Use numbered lists (1., 2., etc.) for sequential steps
+  * Use `code formatting` for technical terms
+  * Use headings (## or ###) to organize longer responses
 """
 
             print(f"📤 Sending to LLM (general mode): {message[:50]}...")

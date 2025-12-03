@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Send, Sparkles, X, Loader } from 'lucide-react';
 import { chatApi } from '../lib/api';
 import type { ChatMessage, ChatSuggestion } from '../types';
+import FormattedMessage from './FormattedMessage';
 
 interface AIChatPanelProps {
   clientId?: number;
@@ -193,7 +194,10 @@ export default function AIChatPanel({ clientId, clientName, onClose }: AIChatPan
                 lineHeight: '1.5',
                 boxShadow: message.role === 'assistant' ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none'
               }}>
-                {message.content}
+                <FormattedMessage
+                  content={message.content}
+                  isUser={message.role === 'user'}
+                />
               </div>
             </div>
           ))
