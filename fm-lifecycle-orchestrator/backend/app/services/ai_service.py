@@ -23,6 +23,13 @@ class AIService:
 
         if self.llm_enabled and settings.llm_api_key:
             try:
+                print(f"🔧 Initializing LLM client...")
+                print(f"   Endpoint: {settings.llm_api_endpoint}")
+                print(f"   Model: {settings.llm_model}")
+                print(f"   API Key length: {len(settings.llm_api_key)} chars")
+                print(f"   API Key (first 10 chars): {settings.llm_api_key[:10]}...")
+                print(f"   SSL Verify: {settings.llm_verify_ssl}")
+
                 # Create custom HTTP client if SSL verification is disabled
                 http_client = None
                 if not settings.llm_verify_ssl:
@@ -38,7 +45,9 @@ class AIService:
                 stream_mode = "streaming" if self.llm_stream else "non-streaming"
                 print(f"✅ LLM client initialized ({stream_mode}): {settings.llm_api_endpoint} | Model: {self.model}")
             except Exception as e:
-                print(f"⚠️ Failed to initialize LLM client: {str(e)}")
+                print(f"⚠️ Failed to initialize LLM client: {type(e).__name__}: {str(e)}")
+                import traceback
+                print(f"   Traceback:\n{traceback.format_exc()}")
                 self.client = None
                 self.llm_enabled = False
         else:
@@ -1281,6 +1290,15 @@ Return confidence scores based on:
 If an entity cannot be found, set value to null and confidence to 0.0."""
 
         try:
+            print("🔍 === LLM Entity Extraction Debug ===")
+            print(f"   Model: {self.model}")
+            print(f"   Endpoint: {settings.llm_api_endpoint}")
+            print(f"   API Key (first 10 chars): {settings.llm_api_key[:10]}..." if settings.llm_api_key else "   API Key: (empty)")
+            print(f"   SSL Verify: {settings.llm_verify_ssl}")
+            print(f"   Stream: {self.llm_stream}")
+            print(f"   Prompt length: {len(prompt)} chars")
+
+            print("📤 Sending request to LLM API...")
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -1291,14 +1309,41 @@ If an entity cannot be found, set value to null and confidence to 0.0."""
                 response_format={"type": "json_object"}
             )
 
-            import json
-            entities = json.loads(response.choices[0].message.content)
+            print("📥 Response received from LLM API")
+            print(f"   Response object type: {type(response)}")
+            print(f"   Response has choices: {hasattr(response, 'choices')}")
+
+            if hasattr(response, 'choices') and len(response.choices) > 0:
+                print(f"   Number of choices: {len(response.choices)}")
+                message_content = response.choices[0].message.content
+                print(f"   Message content type: {type(message_content)}")
+                print(f"   Message content length: {len(message_content) if message_content else 0}")
+                print(f"   Message content (first 200 chars): {message_content[:200] if message_content else '(empty)'}")
+
+                if not message_content:
+                    raise ValueError("LLM returned empty content")
+
+                import json
+                print("🔄 Attempting to parse JSON...")
+                entities = json.loads(message_content)
+                print(f"✅ JSON parsed successfully, keys: {list(entities.keys())}")
+            else:
+                raise ValueError("LLM response has no choices")
 
             print(f"✅ LLM entity extraction successful")
             return entities
 
+        except json.JSONDecodeError as e:
+            print(f"❌ JSON Decode Error: {str(e)}")
+            print(f"   Error at: line {e.lineno}, column {e.colno}, position {e.pos}")
+            print(f"   Failed to parse: {e.doc[:500] if hasattr(e, 'doc') and e.doc else '(no doc)'}")
+            print("   Falling back to simulated entity extraction")
+            return self._simulate_entity_extraction(extracted_text, client_name, country, entity_type)
         except Exception as e:
-            print(f"❌ LLM entity extraction error: {str(e)}")
+            print(f"❌ LLM entity extraction error: {type(e).__name__}: {str(e)}")
+            import traceback
+            print(f"   Traceback:\n{traceback.format_exc()}")
+            print("   Falling back to simulated entity extraction")
             # Fallback to simulation
             return self._simulate_entity_extraction(extracted_text, client_name, country, entity_type)
 

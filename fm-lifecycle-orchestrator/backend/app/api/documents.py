@@ -677,3 +677,71 @@ def verify_annotation(
         "verified_by": annotation.verified_by,
         "verified_at": annotation.verified_at.isoformat()
     }
+
+
+@router.post("/test-llm")
+def test_llm_connection():
+    """
+    Test endpoint to verify LLM connection and response parsing.
+    This helps debug LLM integration issues without uploading documents.
+    """
+    print("\n" + "="*80)
+    print("🧪 LLM Connection Test Started")
+    print("="*80)
+
+    # Test text for entity extraction
+    test_text = """
+    CERTIFICATE OF INCORPORATION
+
+    This certifies that GLOBAL TRADE SOLUTIONS PTE LTD
+    has been incorporated under the laws of Singapore
+    on the 15th day of June 2023.
+
+    Registration Number: RC-2023-45678
+    Entity Type: Private Limited Company
+
+    Registered Address:
+    123 Marina Boulevard #15-01
+    Singapore 018989
+
+    This certificate is valid until 15 June 2026.
+    """
+
+    try:
+        # Test entity extraction
+        result = ai_service.extract_entities_with_llm(
+            extracted_text=test_text,
+            client_name="GLOBAL TRADE SOLUTIONS PTE LTD",
+            country="Singapore",
+            entity_type="Private Limited Company"
+        )
+
+        print("="*80)
+        print("✅ LLM Test Completed Successfully")
+        print("="*80 + "\n")
+
+        return {
+            "status": "success",
+            "message": "LLM connection successful",
+            "llm_enabled": ai_service.llm_enabled,
+            "model": ai_service.model,
+            "endpoint": settings.llm_api_endpoint,
+            "entities_extracted": result,
+            "entity_count": len(result)
+        }
+
+    except Exception as e:
+        print("="*80)
+        print(f"❌ LLM Test Failed: {type(e).__name__}")
+        print("="*80 + "\n")
+
+        import traceback
+        return {
+            "status": "error",
+            "message": f"LLM connection failed: {str(e)}",
+            "error_type": type(e).__name__,
+            "llm_enabled": ai_service.llm_enabled,
+            "model": ai_service.model if hasattr(ai_service, 'model') else None,
+            "endpoint": settings.llm_api_endpoint,
+            "traceback": traceback.format_exc()
+        }
