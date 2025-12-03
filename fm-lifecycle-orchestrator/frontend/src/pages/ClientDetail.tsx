@@ -807,9 +807,9 @@ export default function ClientDetail() {
   const [cxSyncStatus, setCxSyncStatus] = useState<any>(null)
   const [publishingToCX, setPublishingToCX] = useState(false)
 
-  // Document validation state
-  const [documentValidation, setDocumentValidation] = useState<any>(null)
-  const [loadingDocValidation, setLoadingDocValidation] = useState(false)
+  // Document requirements state (for validation summary)
+  const [documentRequirements, setDocumentRequirements] = useState<any>(null)
+  const [loadingDocRequirements, setLoadingDocRequirements] = useState(false)
 
   useEffect(() => {
     const fetchClientData = async () => {
@@ -951,17 +951,17 @@ export default function ClientDetail() {
     }
   }
 
-  const fetchDocumentValidation = async () => {
+  const fetchDocumentRequirements = async () => {
     if (!clientId) return
-    setLoadingDocValidation(true)
+    setLoadingDocRequirements(true)
     try {
-      const response = await fetch(`http://localhost:8000/api/clients/${clientId}/document-validation`)
+      const response = await fetch(`http://localhost:8000/api/clients/${clientId}/document-requirements`)
       const data = await response.json()
-      setDocumentValidation(data)
+      setDocumentRequirements(data)
     } catch (error) {
-      console.error('Failed to fetch document validation:', error)
+      console.error('Failed to fetch document requirements:', error)
     } finally {
-      setLoadingDocValidation(false)
+      setLoadingDocRequirements(false)
     }
   }
 
@@ -969,13 +969,14 @@ export default function ClientDetail() {
   useEffect(() => {
     if (activeTab === 'regulatory' && clientId) {
       fetchCXSyncStatus()
+      fetchDocumentRequirements()
     }
   }, [activeTab, clientId])
 
-  // Fetch document validation when documents tab is opened
+  // Fetch document requirements when documents tab is opened
   useEffect(() => {
     if (activeTab === 'documents' && clientId) {
-      fetchDocumentValidation()
+      fetchDocumentRequirements()
     }
   }, [activeTab, clientId])
 
@@ -2212,9 +2213,9 @@ export default function ClientDetail() {
 
                 {eligibilities.length > 0 && (
                   <div style={{ marginTop: '16px' }}>
-                    {documentValidation && documentValidation.data_quality_score < 90 && (
+                    {documentRequirements?.summary && documentRequirements.summary.compliance_percentage < 90 && (
                       <div style={{ padding: '12px 16px', backgroundColor: '#fef3c7', borderRadius: '8px', border: '1px solid #fbbf24', marginBottom: '16px', fontSize: '13px', color: '#92400e' }}>
-                        <strong>Note:</strong> Classification will be published with data quality exceptions flagged for review (Score: {documentValidation.data_quality_score}%)
+                        <strong>Note:</strong> Classification will be published with document compliance exceptions flagged for review (Compliance: {documentRequirements.summary.compliance_percentage.toFixed(0)}%)
                       </div>
                     )}
 
@@ -2270,69 +2271,98 @@ export default function ClientDetail() {
         {activeTab === 'documents' && (
           <div className="space-y-6">
             {/* Document Validation Summary */}
-            {documentValidation && (
+            {documentRequirements?.summary && (
               <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '2px solid #e5e7eb' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '16px' }}>
                   Document Validation Summary
                 </h3>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '20px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
                   <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Overall Status</div>
-                    <div style={{ fontSize: '20px', fontWeight: '600', color: '#111827', textTransform: 'capitalize' }}>
-                      {documentValidation.overall_status}
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>Overall Status</div>
+                    <div style={{
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: documentRequirements.summary.compliance_percentage >= 80 ? '#10b981' :
+                             documentRequirements.summary.compliance_percentage >= 50 ? '#f59e0b' : '#ef4444',
+                      textTransform: 'capitalize'
+                    }}>
+                      {documentRequirements.summary.compliance_percentage >= 80 ? 'Excellent' :
+                       documentRequirements.summary.compliance_percentage >= 50 ? 'Good' : 'Needs Attention'}
                     </div>
                   </div>
+
                   <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Data Quality Score</div>
-                    <div style={{ fontSize: '20px', fontWeight: '600', color: documentValidation.data_quality_score >= 75 ? '#10b981' : '#f59e0b' }}>
-                      {documentValidation.data_quality_score}%
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>Total Requirements</div>
+                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#111827' }}>
+                      {documentRequirements.summary.total_requirements}
                     </div>
                   </div>
+
                   <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Documents Present</div>
-                    <div style={{ fontSize: '20px', fontWeight: '600', color: '#111827' }}>
-                      {documentValidation.deterministic_checks?.documents_present}/{documentValidation.deterministic_checks?.total_required_documents}
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>Compliant</div>
+                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#10b981' }}>
+                      {documentRequirements.summary.compliant_count}
                     </div>
                   </div>
+
                   <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Can Publish to Client Central</div>
-                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>Missing</div>
+                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#ef4444' }}>
+                      {documentRequirements.summary.missing_count}
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>Expired</div>
+                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#f59e0b' }}>
+                      {documentRequirements.summary.expired_count}
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>Compliance</div>
+                    <div style={{
+                      fontSize: '24px',
+                      fontWeight: '700',
+                      color: documentRequirements.summary.compliance_percentage >= 80 ? '#10b981' :
+                             documentRequirements.summary.compliance_percentage >= 50 ? '#f59e0b' : '#ef4444'
+                    }}>
+                      {documentRequirements.summary.compliance_percentage.toFixed(0)}%
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>Can Publish to CX</div>
+                    <div style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#10b981',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      marginTop: '4px'
+                    }}>
                       <CheckCircle2 size={20} />
-                      {documentValidation.can_publish_to_cx ? 'Yes' : 'No'}
+                      Yes
                     </div>
                   </div>
                 </div>
 
-                {documentValidation.deterministic_checks?.issues && documentValidation.deterministic_checks.issues.length > 0 && (
-                  <div style={{ padding: '12px 16px', backgroundColor: '#fef3c7', borderRadius: '8px', border: '1px solid #fbbf24', marginBottom: '16px' }}>
+                {/* Issues Found */}
+                {(documentRequirements.summary.missing_count > 0 || documentRequirements.summary.expired_count > 0) && (
+                  <div style={{ padding: '12px 16px', backgroundColor: '#fef3c7', borderRadius: '8px', border: '1px solid #fbbf24' }}>
                     <div style={{ fontSize: '13px', fontWeight: '600', color: '#92400e', marginBottom: '8px' }}>Issues Found:</div>
-                    {documentValidation.deterministic_checks.issues.map((issue: string, idx: number) => (
-                      <div key={idx} style={{ fontSize: '12px', color: '#92400e', marginLeft: '12px' }}>• {issue}</div>
-                    ))}
-                  </div>
-                )}
-
-                {documentValidation.ai_suggestions?.suggestions && documentValidation.ai_suggestions.suggestions.length > 0 && (
-                  <div style={{ marginTop: '16px' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '12px' }}>
-                      AI-Suggested Documents (based on similar clients):
-                    </div>
-                    <div style={{ display: 'grid', gap: '8px' }}>
-                      {documentValidation.ai_suggestions.suggestions.map((suggestion: any, idx: number) => (
-                        <div key={idx} style={{ padding: '12px', backgroundColor: '#eff6ff', borderRadius: '8px', border: '1px solid #3b82f6' }}>
-                          <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'start' }}>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e40af' }}>{suggestion.document_name}</div>
-                              <div style={{ fontSize: '12px', color: '#3b82f6', marginTop: '4px' }}>{suggestion.reason}</div>
-                            </div>
-                            <div style={{ padding: '4px 8px', backgroundColor: '#dbeafe', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: '#1e40af' }}>
-                              {suggestion.commonality} common
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    {documentRequirements.summary.missing_count > 0 && (
+                      <div style={{ fontSize: '12px', color: '#92400e', marginLeft: '12px' }}>
+                        • {documentRequirements.summary.missing_count} missing document{documentRequirements.summary.missing_count > 1 ? 's' : ''} require{documentRequirements.summary.missing_count === 1 ? 's' : ''} attention
+                      </div>
+                    )}
+                    {documentRequirements.summary.expired_count > 0 && (
+                      <div style={{ fontSize: '12px', color: '#92400e', marginLeft: '12px' }}>
+                        • {documentRequirements.summary.expired_count} expired document{documentRequirements.summary.expired_count > 1 ? 's need' : ' needs'} renewal
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
