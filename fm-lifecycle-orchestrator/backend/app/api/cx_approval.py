@@ -1,6 +1,7 @@
 """CX Product Approval API - Simulates product approval from CX system"""
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 from typing import Dict, Any
 from ..database import get_db
 from ..models.client import Client, OnboardingStatus
@@ -9,6 +10,69 @@ from ..services.classification_engine import ClassificationEngine
 from datetime import datetime
 
 router = APIRouter(prefix="/api", tags=["cx-approval"])
+
+
+def _get_applicable_regimes(client: Client) -> list[str]:
+    """
+    Determine which regimes are applicable to a client based on their attributes.
+    This prevents evaluation against irrelevant regimes (e.g., US regimes for Indian clients).
+    """
+    client_attrs = client.client_attributes or {}
+    booking_location = client_attrs.get("booking_location", "")
+    country = client.country_of_incorporation or ""
+
+    # Map of regime to applicable booking locations/countries
+    regime_mapping = {
+        # India regimes
+        "RBI": ["India"],
+        "RBI Variation Margin": ["India"],
+        "India NDDC TR": ["India"],
+
+        # Singapore regimes
+        "MAS Margin": ["Singapore"],
+        "MAS Clearing": ["Singapore"],
+        "MAS Transaction Reporting": ["Singapore"],
+        "MAS FAIR Client Classification": ["Singapore"],
+
+        # Hong Kong regimes
+        "HKMA Margin": ["Hong Kong"],
+        "HKMA Clearing": ["Hong Kong"],
+        "HKMA Transaction Reporting": ["Hong Kong"],
+
+        # US regimes
+        "Dodd Frank (US Person - CFTC)": ["United States", "US"],
+        "Dodd Frank (SEC)": ["United States", "US"],
+        "DF Deemed ISDA": ["United States", "US"],
+
+        # EU regimes (can apply to international clients)
+        "MIFID": ["international"],
+        "EMIR": ["international"],
+        "SFTR": ["international"],
+
+        # Australian regimes
+        "ASIC TR": ["Australia"],
+
+        # Other regimes
+        "Canadian Transaction Reporting(CAD)": ["Canada"],
+        "ZAR MR": ["South Africa"],
+        "Indonesia Margin Classification": ["Indonesia"],
+        "Stays Exempt": ["international"],  # Can apply to any client
+    }
+
+    applicable_regimes = []
+
+    for regime, applicable_locations in regime_mapping.items():
+        # Check if regime applies to this client based on booking location or country
+        if "international" in applicable_locations:
+            applicable_regimes.append(regime)
+        else:
+            # Check booking location
+            for location in applicable_locations:
+                if booking_location.startswith(location) or country == location:
+                    applicable_regimes.append(regime)
+                    break
+
+    return applicable_regimes
 
 
 @router.post("/clients/{client_id}/simulate-cx-approval")
@@ -34,6 +98,8 @@ def simulate_cx_product_approval(client_id: int, db: Session = Depends(get_db)) 
             attrs["product_grid"]["product_status"] = "approved"
             attrs["product_grid"]["approval_date"] = datetime.now().isoformat()
         client.client_attributes = attrs
+        # Mark the JSON column as modified so SQLAlchemy persists the change
+        flag_modified(client, "client_attributes")
 
     # Step 2: Complete Legal Entity Setup stage
     legal_setup_stage = db.query(OnboardingStage).filter(
@@ -57,22 +123,20 @@ def simulate_cx_product_approval(client_id: int, db: Session = Depends(get_db)) 
         reg_class_stage.status = StageStatus.IN_PROGRESS
         reg_class_stage.started_date = datetime.now()
 
+    # Commit changes and refresh client to ensure classification engine sees updated data
     db.commit()
+    db.refresh(client)
 
-    # Step 4: Trigger classification against all regimes
+    # Step 4: Trigger classification against applicable regimes only
     engine = ClassificationEngine(db)
 
-    # Get list of all regimes with active rules
-    from ..models.classification_rule import ClassificationRule
-    regimes = db.query(ClassificationRule.regime).filter(
-        ClassificationRule.is_active == True
-    ).distinct().all()
-    regime_list = [r[0] for r in regimes]
+    # Intelligently filter regimes based on client's booking location and country
+    applicable_regimes = _get_applicable_regimes(client)
 
     classification_results = {}
     eligible_regimes = []
 
-    for regime in regime_list:
+    for regime in applicable_regimes:
         try:
             result = engine.evaluate_client_eligibility(client_id, regime)
             classification_results[regime] = result
@@ -103,6 +167,6 @@ def simulate_cx_product_approval(client_id: int, db: Session = Depends(get_db)) 
         "classification_triggered": True,
         "classification_results": classification_results,
         "cx_sync": cx_sync_result,
-        "regimes_evaluated": len(regime_list),
+        "regimes_evaluated": len(applicable_regimes),
         "eligible_regimes": eligible_regimes
     }
