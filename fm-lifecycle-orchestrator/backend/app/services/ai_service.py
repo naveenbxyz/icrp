@@ -1311,24 +1311,35 @@ If an entity cannot be found, set value to null and confidence to 0.0."""
 
             print("📥 Response received from LLM API")
             print(f"   Response object type: {type(response)}")
+            print(f"   Response object: {response}")
             print(f"   Response has choices: {hasattr(response, 'choices')}")
 
-            if hasattr(response, 'choices') and len(response.choices) > 0:
-                print(f"   Number of choices: {len(response.choices)}")
-                message_content = response.choices[0].message.content
-                print(f"   Message content type: {type(message_content)}")
-                print(f"   Message content length: {len(message_content) if message_content else 0}")
-                print(f"   Message content (first 200 chars): {message_content[:200] if message_content else '(empty)'}")
+            if not hasattr(response, 'choices'):
+                raise ValueError(f"LLM response has no 'choices' attribute. Response: {response}")
 
-                if not message_content:
-                    raise ValueError("LLM returned empty content")
+            if len(response.choices) == 0:
+                raise ValueError(f"LLM response choices is empty. Response: {response}")
 
-                import json
-                print("🔄 Attempting to parse JSON...")
-                entities = json.loads(message_content)
-                print(f"✅ JSON parsed successfully, keys: {list(entities.keys())}")
-            else:
-                raise ValueError("LLM response has no choices")
+            print(f"   Number of choices: {len(response.choices)}")
+
+            choice = response.choices[0]
+            print(f"   Choice object: {choice}")
+            print(f"   Choice has message: {hasattr(choice, 'message')}")
+
+            if not hasattr(choice, 'message'):
+                raise ValueError(f"LLM choice has no 'message' attribute. Choice: {choice}")
+
+            message_content = choice.message.content
+            print(f"   Message content type: {type(message_content)}")
+            print(f"   Message content length: {len(message_content) if message_content else 0}")
+            print(f"   Message content (first 500 chars): {message_content[:500] if message_content else '(empty)'}")
+
+            if not message_content:
+                raise ValueError("LLM returned empty content")
+
+            print("🔄 Attempting to parse JSON...")
+            entities = json.loads(message_content)
+            print(f"✅ JSON parsed successfully, keys: {list(entities.keys())}")
 
             print(f"✅ LLM entity extraction successful")
             return entities
@@ -1339,12 +1350,22 @@ If an entity cannot be found, set value to null and confidence to 0.0."""
             print(f"   Failed to parse: {e.doc[:500] if hasattr(e, 'doc') and e.doc else '(no doc)'}")
             print("   Falling back to simulated entity extraction")
             return self._simulate_entity_extraction(extracted_text, client_name, country, entity_type)
+        except ValueError as e:
+            print(f"❌ Value Error: {str(e)}")
+            print("   Falling back to simulated entity extraction")
+            return self._simulate_entity_extraction(extracted_text, client_name, country, entity_type)
+        except AttributeError as e:
+            print(f"❌ Attribute Error: {str(e)}")
+            import traceback
+            print(f"   Traceback:\n{traceback.format_exc()}")
+            print("   This usually means the LLM response structure is unexpected")
+            print("   Falling back to simulated entity extraction")
+            return self._simulate_entity_extraction(extracted_text, client_name, country, entity_type)
         except Exception as e:
             print(f"❌ LLM entity extraction error: {type(e).__name__}: {str(e)}")
             import traceback
             print(f"   Traceback:\n{traceback.format_exc()}")
             print("   Falling back to simulated entity extraction")
-            # Fallback to simulation
             return self._simulate_entity_extraction(extracted_text, client_name, country, entity_type)
 
     def _simulate_entity_extraction(
