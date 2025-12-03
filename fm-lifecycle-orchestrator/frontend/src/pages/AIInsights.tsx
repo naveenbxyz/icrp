@@ -309,17 +309,54 @@ export default function AIInsights() {
       {/* AI Recommendations */}
       {insightsData.recommendations.length > 0 && (
         <div>
-          <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#111827', marginBottom: '16px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#111827', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Sparkles size={20} className="text-accent" />
             AI Recommendations
           </h2>
-          <div className="p-5 bg-info/10 border border-info/30 rounded-xl">
-            <ul style={{ margin: 0, paddingLeft: '24px' }}>
+          <div style={{
+            padding: '24px',
+            backgroundColor: '#eff6ff',
+            border: '2px solid #3b82f6',
+            borderRadius: '12px'
+          }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {insightsData.recommendations.map((rec, idx) => (
-                <li key={idx} className="text-sm text-info mb-2 last:mb-0">
-                  {rec}
-                </li>
+                <div key={idx} style={{
+                  display: 'flex',
+                  gap: '16px',
+                  alignItems: 'flex-start',
+                  padding: '16px',
+                  backgroundColor: 'white',
+                  borderRadius: '8px',
+                  border: '1px solid #bfdbfe'
+                }}>
+                  <div style={{
+                    minWidth: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '14px',
+                    fontWeight: '700',
+                    flexShrink: 0
+                  }}>
+                    {idx + 1}
+                  </div>
+                  <div style={{
+                    flex: 1,
+                    fontSize: '14px',
+                    lineHeight: '1.6',
+                    color: '#1e40af',
+                    paddingTop: '4px'
+                  }}>
+                    {rec}
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         </div>
       )}
