@@ -1143,38 +1143,79 @@ When answering:
         recommendations = []
 
         # Use LLM if available
-        if self.client:
+        if self.client and self.llm_enabled:
             try:
                 # Prepare summary for LLM
-                summary_text = f"""
-                Portfolio Summary:
-                - Total clients: {total_clients}
-                - Onboarding statuses: {onboarding_statuses}
-                - Documents: {len(documents_data)} total, {pending_docs} pending
-                - Verification rate: {verification_rate:.1f}%
-                - High-risk clients: {high_risk_count}
+                summary_text = f"""Portfolio Summary:
+- Total clients: {total_clients}
+- Onboarding statuses: {onboarding_statuses}
+- Documents: {len(documents_data)} total, {pending_docs} pending
+- Verification rate: {verification_rate:.1f}%
+- High-risk clients: {high_risk_count}
 
-                Client breakdown by jurisdiction:
-                {self._get_jurisdiction_breakdown(clients_data)}
-                """
+Client breakdown by jurisdiction:
+{self._get_jurisdiction_breakdown(clients_data)}
+
+Provide 3-5 specific, actionable recommendations as a simple numbered or bulleted list."""
+
+                print(f"🤖 Requesting LLM recommendations...")
 
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=[
-                        {"role": "system", "content": "You are an expert compliance analyst providing actionable recommendations for client onboarding operations."},
-                        {"role": "user", "content": f"Based on this portfolio data, provide 3-5 specific, actionable recommendations to improve efficiency and reduce risk:\n\n{summary_text}"}
+                        {
+                            "role": "system",
+                            "content": "You are an expert compliance analyst. Provide specific, actionable recommendations in a simple numbered or bulleted list format. Keep each recommendation concise (one sentence)."
+                        },
+                        {
+                            "role": "user",
+                            "content": summary_text
+                        }
                     ],
                     temperature=0.7,
-                    max_tokens=500
+                    max_tokens=500,
+                    stream=False  # Disable streaming for insights
                 )
 
-                llm_recommendations = response.choices[0].message.content.strip().split('\n')
-                recommendations = [rec.strip('- ').strip() for rec in llm_recommendations if rec.strip() and not rec.strip().startswith('#')][:5]
+                # More robust parsing
+                if response and response.choices and len(response.choices) > 0:
+                    content = response.choices[0].message.content
+                    if content:
+                        print(f"✅ LLM response received: {len(content)} chars")
+                        print(f"   First 100 chars: {content[:100]}...")
 
-                if recommendations:
-                    return recommendations
+                        # Parse recommendations more robustly
+                        lines = content.strip().split('\n')
+                        recommendations = []
+
+                        for line in lines:
+                            # Remove common prefixes and clean up
+                            cleaned = line.strip()
+                            # Remove numbering like "1.", "2)", "1-", etc.
+                            cleaned = cleaned.lstrip('0123456789.-) ')
+                            # Remove bullet points
+                            cleaned = cleaned.lstrip('•*-– ')
+
+                            # Skip empty lines, headers, or very short lines
+                            if cleaned and len(cleaned) > 15 and not cleaned.endswith(':'):
+                                recommendations.append(cleaned)
+
+                        if recommendations:
+                            print(f"✅ Parsed {len(recommendations)} recommendations from LLM")
+                            return recommendations[:5]
+                        else:
+                            print(f"⚠️ No valid recommendations parsed from LLM response")
+                else:
+                    print(f"⚠️ Empty or invalid LLM response structure")
+
+            except AttributeError as e:
+                print(f"⚠️ LLM response structure error: {str(e)}")
+                import traceback
+                print(traceback.format_exc())
             except Exception as e:
-                print(f"LLM recommendations failed: {str(e)}, falling back to heuristics")
+                print(f"⚠️ LLM recommendations failed: {type(e).__name__}: {str(e)}")
+                import traceback
+                print(traceback.format_exc())
 
         # Fallback to heuristic-based recommendations
         if pending_docs > 5:
