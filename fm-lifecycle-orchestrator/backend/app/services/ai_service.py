@@ -1323,11 +1323,17 @@ If an entity cannot be found, set value to null and confidence to 0.0."""
                     **request_params,
                     response_format={"type": "json_object"}
                 )
+                print(f"   ✅ Request with response_format succeeded")
             except Exception as format_error:
                 # If response_format fails, try without it
-                print(f"   ⚠️ response_format not supported: {str(format_error)}")
-                print(f"   Retrying without response_format parameter...")
-                response = self.client.chat.completions.create(**request_params)
+                print(f"   ❌ response_format not supported: {type(format_error).__name__}: {str(format_error)}")
+                print(f"   🔄 Retrying without response_format parameter...")
+                try:
+                    response = self.client.chat.completions.create(**request_params)
+                    print(f"   ✅ Request without response_format succeeded")
+                except Exception as retry_error:
+                    print(f"   ❌ Retry also failed: {type(retry_error).__name__}: {str(retry_error)}")
+                    raise
 
             print("📥 Response received from LLM API")
             print(f"   Response object type: {type(response)}")
@@ -1353,11 +1359,10 @@ If an entity cannot be found, set value to null and confidence to 0.0."""
 
             if message_content:
                 # Show first 500 chars and last 100 chars to see if JSON is complete
-                preview = message_content[:500]
-                if len(message_content) > 500:
-                    preview += "\n   ... (truncated) ...\n   "
-                    preview += message_content[-100:]
-                print(f"   Message content preview:\n{preview}")
+                print(f"   === FULL MESSAGE CONTENT START ===")
+                print(message_content)
+                print(f"   === FULL MESSAGE CONTENT END ===")
+                print(f"   Message content length: {len(message_content)} characters")
             else:
                 print(f"   Message content: (empty)")
 
@@ -1368,31 +1373,51 @@ If an entity cannot be found, set value to null and confidence to 0.0."""
 
             # Try to extract JSON if it's wrapped in markdown code blocks or has extra text
             content_to_parse = message_content.strip()
+            print(f"   Original content starts with: '{content_to_parse[:50]}'")
+            print(f"   Original content ends with: '{content_to_parse[-50:]}'")
 
             # Check if content is wrapped in markdown code blocks
             if content_to_parse.startswith("```"):
-                print("   Detected markdown code block, extracting JSON...")
+                print("   ✂️ Detected markdown code block, extracting JSON...")
                 # Remove ```json or ``` from start and ``` from end
                 lines = content_to_parse.split('\n')
                 if lines[0].startswith("```"):
                     lines = lines[1:]  # Remove first line
-                if lines[-1].strip() == "```":
+                if lines and lines[-1].strip() == "```":
                     lines = lines[:-1]  # Remove last line
                 content_to_parse = '\n'.join(lines).strip()
-                print(f"   Cleaned content (first 200 chars): {content_to_parse[:200]}")
+                print(f"   ✂️ After markdown removal: '{content_to_parse[:100]}'...")
 
             # Try to find JSON object if content has extra text
             if not content_to_parse.startswith('{'):
-                print("   Content doesn't start with '{', searching for JSON object...")
+                print("   🔍 Content doesn't start with '{', searching for JSON object...")
                 start_idx = content_to_parse.find('{')
                 if start_idx != -1:
                     end_idx = content_to_parse.rfind('}')
-                    if end_idx != -1:
+                    if end_idx != -1 and end_idx > start_idx:
                         content_to_parse = content_to_parse[start_idx:end_idx+1]
-                        print(f"   Extracted JSON (first 200 chars): {content_to_parse[:200]}")
+                        print(f"   ✂️ Extracted JSON substring from position {start_idx} to {end_idx}")
+                        print(f"   ✂️ Extracted content: '{content_to_parse[:100]}'...")
+                    else:
+                        print(f"   ❌ Could not find matching closing brace (start={start_idx}, end={end_idx})")
+                else:
+                    print(f"   ❌ Could not find opening brace in content")
 
-            entities = json.loads(content_to_parse)
-            print(f"✅ JSON parsed successfully, keys: {list(entities.keys())}")
+            # Final check before parsing
+            print(f"   📝 Content to parse (length={len(content_to_parse)}):")
+            print(f"   === CONTENT TO PARSE START ===")
+            print(content_to_parse)
+            print(f"   === CONTENT TO PARSE END ===")
+
+            try:
+                entities = json.loads(content_to_parse)
+                print(f"   ✅ JSON parsed successfully, keys: {list(entities.keys())}")
+            except json.JSONDecodeError as parse_error:
+                print(f"   ❌ JSON parsing failed!")
+                print(f"      Error: {parse_error}")
+                print(f"      Position: line {parse_error.lineno}, column {parse_error.colno}")
+                print(f"      Character at error: '{content_to_parse[parse_error.pos:parse_error.pos+20] if parse_error.pos < len(content_to_parse) else '(end of content)'}'")
+                raise
 
             print(f"✅ LLM entity extraction successful")
             return entities
