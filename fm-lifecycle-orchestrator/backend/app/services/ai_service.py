@@ -1142,7 +1142,7 @@ When answering:
         """Generate smart recommendations based on actual data"""
         recommendations = []
 
-        # Use LLM if available
+        # Use LLM if available (using same pattern as working chat code)
         if self.client and self.llm_enabled:
             try:
                 # Prepare summary for LLM
@@ -1158,60 +1158,71 @@ Client breakdown by jurisdiction:
 
 Provide 3-5 specific, actionable recommendations as a simple numbered or bulleted list."""
 
+                system_prompt = "You are an expert compliance analyst. Provide 3-5 specific, actionable recommendations in a simple numbered or bulleted list format. Keep each recommendation concise (one sentence)."
+
                 print(f"🤖 Requesting LLM recommendations...")
+                print(f"   - Streaming mode: {self.llm_stream}")
 
-                response = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are an expert compliance analyst. Provide specific, actionable recommendations in a simple numbered or bulleted list format. Keep each recommendation concise (one sentence)."
-                        },
-                        {
-                            "role": "user",
-                            "content": summary_text
-                        }
-                    ],
-                    temperature=0.7,
-                    max_tokens=500,
-                    stream=False  # Disable streaming for insights
-                )
+                # Use the same streaming/non-streaming pattern as working chat code
+                llm_content = ""
+                if self.llm_stream:
+                    # Streaming mode - collect all chunks (same as chat)
+                    stream = self.client.chat.completions.create(
+                        model=self.model,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": summary_text}
+                        ],
+                        temperature=0.7,
+                        max_tokens=500,
+                        stream=True
+                    )
 
-                # More robust parsing
-                if response and response.choices and len(response.choices) > 0:
-                    content = response.choices[0].message.content
-                    if content:
-                        print(f"✅ LLM response received: {len(content)} chars")
-                        print(f"   First 100 chars: {content[:100]}...")
-
-                        # Parse recommendations more robustly
-                        lines = content.strip().split('\n')
-                        recommendations = []
-
-                        for line in lines:
-                            # Remove common prefixes and clean up
-                            cleaned = line.strip()
-                            # Remove numbering like "1.", "2)", "1-", etc.
-                            cleaned = cleaned.lstrip('0123456789.-) ')
-                            # Remove bullet points
-                            cleaned = cleaned.lstrip('•*-– ')
-
-                            # Skip empty lines, headers, or very short lines
-                            if cleaned and len(cleaned) > 15 and not cleaned.endswith(':'):
-                                recommendations.append(cleaned)
-
-                        if recommendations:
-                            print(f"✅ Parsed {len(recommendations)} recommendations from LLM")
-                            return recommendations[:5]
-                        else:
-                            print(f"⚠️ No valid recommendations parsed from LLM response")
+                    # Collect streamed chunks
+                    for chunk in stream:
+                        if chunk.choices[0].delta.content:
+                            llm_content += chunk.choices[0].delta.content
                 else:
-                    print(f"⚠️ Empty or invalid LLM response structure")
+                    # Non-streaming mode (same as chat)
+                    response = self.client.chat.completions.create(
+                        model=self.model,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": summary_text}
+                        ],
+                        temperature=0.7,
+                        max_tokens=500
+                    )
+                    llm_content = response.choices[0].message.content
 
-            except AttributeError as e:
-                print(f"⚠️ LLM response structure error: {str(e)}")
-                import traceback
-                print(traceback.format_exc())
+                # Parse recommendations
+                if llm_content:
+                    print(f"✅ LLM response received: {len(llm_content)} chars")
+                    print(f"   First 100 chars: {llm_content[:100]}...")
+
+                    lines = llm_content.strip().split('\n')
+                    recommendations = []
+
+                    for line in lines:
+                        # Remove common prefixes and clean up
+                        cleaned = line.strip()
+                        # Remove numbering like "1.", "2)", "1-", etc.
+                        cleaned = cleaned.lstrip('0123456789.-) ')
+                        # Remove bullet points
+                        cleaned = cleaned.lstrip('•*-– ')
+
+                        # Skip empty lines, headers, or very short lines
+                        if cleaned and len(cleaned) > 15 and not cleaned.endswith(':'):
+                            recommendations.append(cleaned)
+
+                    if recommendations:
+                        print(f"✅ Parsed {len(recommendations)} recommendations from LLM")
+                        return recommendations[:5]
+                    else:
+                        print(f"⚠️ No valid recommendations parsed from LLM response")
+                else:
+                    print(f"⚠️ Empty LLM response")
+
             except Exception as e:
                 print(f"⚠️ LLM recommendations failed: {type(e).__name__}: {str(e)}")
                 import traceback
