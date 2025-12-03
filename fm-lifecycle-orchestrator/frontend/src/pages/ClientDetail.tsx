@@ -1953,7 +1953,9 @@ export default function ClientDetail() {
                           borderColor: elig.is_eligible ? '#d1fae5' : '#fee2e2',
                           borderRadius: '12px',
                           padding: '24px',
-                          backgroundColor: elig.is_eligible ? '#f0fdf4' : '#fef2f2'
+                          backgroundColor: elig.is_eligible ? '#f0fdf4' : '#fef2f2',
+                          minWidth: 0,
+                          overflowX: 'auto'
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
@@ -1978,67 +1980,67 @@ export default function ClientDetail() {
                                   <span>🔍</span>
                                   Evaluated Attributes
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
                                   {elig.client_attributes.account_type && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
                                       <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
-                                      <div style={{ flex: 1 }}>
+                                      <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Account Type</div>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827' }}>{elig.client_attributes.account_type}</div>
+                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{elig.client_attributes.account_type}</div>
                                       </div>
                                     </div>
                                   )}
                                   {elig.client_attributes.booking_location && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
                                       <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
-                                      <div style={{ flex: 1 }}>
+                                      <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Booking Location</div>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827' }}>{elig.client_attributes.booking_location}</div>
+                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{elig.client_attributes.booking_location}</div>
                                       </div>
                                     </div>
                                   )}
                                   {elig.client_attributes.product_grid?.product_group && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
                                       <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
-                                      <div style={{ flex: 1 }}>
+                                      <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Product Group</div>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827' }}>{elig.client_attributes.product_grid.product_group}</div>
+                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{elig.client_attributes.product_grid.product_group}</div>
                                       </div>
                                     </div>
                                   )}
                                   {elig.client_attributes.product_grid?.product_category && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
                                       <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
-                                      <div style={{ flex: 1 }}>
+                                      <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Product Category</div>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827' }}>{elig.client_attributes.product_grid.product_category}</div>
+                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{elig.client_attributes.product_grid.product_category}</div>
                                       </div>
                                     </div>
                                   )}
                                   {elig.client_attributes.product_grid?.product_type && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
                                       <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
-                                      <div style={{ flex: 1 }}>
+                                      <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Product Type</div>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827' }}>{elig.client_attributes.product_grid.product_type}</div>
+                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{elig.client_attributes.product_grid.product_type}</div>
                                       </div>
                                     </div>
                                   )}
                                   {elig.client_attributes.product_grid?.product_status && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
                                       <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
-                                      <div style={{ flex: 1 }}>
+                                      <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Product Status</div>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827' }}>{elig.client_attributes.product_grid.product_status}</div>
+                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{elig.client_attributes.product_grid.product_status}</div>
                                       </div>
                                     </div>
                                   )}
                                   {elig.client_attributes.product_grid?.bank_entity && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
                                       <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
-                                      <div style={{ flex: 1 }}>
+                                      <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Bank Entity</div>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827' }}>{elig.client_attributes.product_grid.bank_entity}</div>
+                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{elig.client_attributes.product_grid.bank_entity}</div>
                                       </div>
                                     </div>
                                   )}
@@ -2047,8 +2049,8 @@ export default function ClientDetail() {
                             )}
 
                             {/* Matched and Unmatched Rules */}
-                            <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: elig.unmatched_rules && elig.unmatched_rules.length > 0 ? '1fr 1fr' : '1fr', gap: '20px' }}>
-                              <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '10px', border: '2px solid #86efac' }}>
+                            <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: elig.unmatched_rules && elig.unmatched_rules.length > 0 ? 'repeat(auto-fit, minmax(300px, 1fr))' : '1fr', gap: '20px' }}>
+                              <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '10px', border: '2px solid #86efac', minWidth: 0 }}>
                                 <div style={{ fontSize: '14px', fontWeight: '600', color: '#065f46', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                   <span style={{ fontSize: '16px' }}>✅</span>
                                   Matched Rules ({elig.matched_rules?.length || 0})
@@ -2056,7 +2058,7 @@ export default function ClientDetail() {
                                 {elig.matched_rules && elig.matched_rules.length > 0 ? (
                                   <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#374151', lineHeight: '2' }}>
                                     {elig.matched_rules.map((rule, idx) => (
-                                      <li key={idx}>
+                                      <li key={idx} style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                                         <strong>{rule.rule_name}</strong>
                                         <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>Type: {rule.rule_type}</div>
                                       </li>
@@ -2068,7 +2070,7 @@ export default function ClientDetail() {
                               </div>
 
                               {elig.unmatched_rules && elig.unmatched_rules.length > 0 && (
-                                <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '10px', border: '2px solid #fca5a5' }}>
+                                <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '10px', border: '2px solid #fca5a5', minWidth: 0 }}>
                                   <div style={{ fontSize: '14px', fontWeight: '600', color: '#991b1b', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span style={{ fontSize: '16px' }}>❌</span>
                                     Unmatched Rules ({elig.unmatched_rules.length})
@@ -2076,14 +2078,14 @@ export default function ClientDetail() {
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                     {elig.unmatched_rules.map((rule, idx) => (
                                       <div key={idx} style={{ padding: '10px', backgroundColor: '#fef2f2', borderRadius: '6px', border: '1px solid #fca5a5' }}>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827', marginBottom: '6px' }}>{rule.rule_name}</div>
+                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827', marginBottom: '6px', wordBreak: 'break-word' }}>{rule.rule_name}</div>
                                         <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '6px' }}>Type: {rule.rule_type}</div>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '10px' }}>
-                                          <div style={{ padding: '4px 6px', backgroundColor: '#fef3c7', borderRadius: '4px' }}>
-                                            <strong style={{ color: '#92400e' }}>Expected:</strong> {JSON.stringify(rule.expected)}
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '10px' }}>
+                                          <div style={{ padding: '4px 6px', backgroundColor: '#fef3c7', borderRadius: '4px', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                                            <strong style={{ color: '#92400e' }}>Expected:</strong> {JSON.stringify(rule.expected, null, 2)}
                                           </div>
-                                          <div style={{ padding: '4px 6px', backgroundColor: '#fee2e2', borderRadius: '4px' }}>
-                                            <strong style={{ color: '#991b1b' }}>Actual:</strong> {JSON.stringify(rule.actual)}
+                                          <div style={{ padding: '4px 6px', backgroundColor: '#fee2e2', borderRadius: '4px', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                                            <strong style={{ color: '#991b1b' }}>Actual:</strong> {JSON.stringify(rule.actual, null, 2)}
                                           </div>
                                         </div>
                                       </div>
