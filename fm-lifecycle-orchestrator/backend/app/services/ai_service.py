@@ -1300,12 +1300,12 @@ If an entity cannot be found, set value to null and confidence to 0.0."""
 
             print("📤 Sending request to LLM API...")
 
-            # For entity extraction, we ALWAYS use non-streaming mode to get complete JSON
-            # Even if LLM_STREAM=true in config, we override it here
-            print(f"   Stream mode: False (forced for entity extraction)")
+            # For entity extraction with custom LLM wrapper, we use streaming mode
+            # to collect delta chunks (your wrapper always returns streaming format)
+            print(f"   Stream mode: True (collecting chunks for custom LLM wrapper)")
 
-            # Try with response_format first (OpenAI standard)
-            # If it fails, retry without it (for LLMs that don't support this parameter)
+            # Your LLM wrapper always returns streaming format, so we need to handle it
+            # We'll use streaming mode to collect delta chunks
             request_params = {
                 "model": self.model,
                 "messages": [
@@ -1313,18 +1313,12 @@ If an entity cannot be found, set value to null and confidence to 0.0."""
                     {"role": "user", "content": prompt}
                 ],
                 "temperature": 0.2,
-                "stream": False
+                "stream": True  # Your wrapper always streams, so we use streaming mode
             }
 
-            # Your LLM wrapper always returns streaming format, so we need to handle it
-            # Even though we set stream=False, it returns chat.completion.chunk objects
-            print(f"   🚀 Sending request (will force streaming collection due to LLM behavior)")
+            print(f"   🚀 Sending request with stream=True (custom LLM wrapper behavior)")
 
-            # Always use streaming since the wrapper ignores stream=False
-            stream = self.client.chat.completions.create(
-                **request_params,
-                stream=True  # Force streaming since wrapper always returns chunks
-            )
+            stream = self.client.chat.completions.create(**request_params)
 
             print("📥 Collecting streaming chunks from LLM API...")
             message_content = ""
