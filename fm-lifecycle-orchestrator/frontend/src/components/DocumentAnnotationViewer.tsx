@@ -255,32 +255,65 @@ export const DocumentAnnotationViewer: React.FC<DocumentAnnotationViewerProps> =
                 />
               </Document>
 
-              {/* Annotation Overlays */}
-              {annotations.map((annotation) => {
+              {/* Annotation Overlays with Numbered Markers */}
+              {annotations.map((annotation, index) => {
                 const isSelected = selectedAnnotation === annotation.id;
                 const isVerified = annotation.status === 'verified' || annotation.status === 'corrected';
+                const markerNumber = index + 1;
 
                 return (
                   <div
                     key={annotation.id}
-                    className={`absolute border-2 cursor-pointer transition-all ${
-                      isSelected
-                        ? 'border-slate-600 bg-slate-200 bg-opacity-40 z-10'
-                        : isVerified
-                        ? 'border-emerald-600 bg-emerald-100 bg-opacity-20'
-                        : 'bg-opacity-20'
+                    className={`absolute cursor-pointer transition-all ${
+                      isSelected ? 'z-10' : ''
                     }`}
                     style={{
                       left: `${annotation.bounding_box.x * pdfScale}px`,
                       top: `${annotation.bounding_box.y * pdfScale}px`,
                       width: `${annotation.bounding_box.width * pdfScale}px`,
                       height: `${annotation.bounding_box.height * pdfScale}px`,
-                      borderColor: isVerified ? 'rgb(16, 185, 129)' : getConfidenceColor(annotation.confidence),
-                      backgroundColor: isVerified ? 'rgba(16, 185, 129, 0.1)' : getConfidenceColor(annotation.confidence),
                     }}
                     onClick={() => setSelectedAnnotation(annotation.id)}
                     title={`${annotation.entity_label}: ${annotation.extracted_value} (${Math.round(annotation.confidence * 100)}%)`}
-                  />
+                  >
+                    {/* Light background highlight */}
+                    <div
+                      className="absolute inset-0 border-2 transition-all"
+                      style={{
+                        borderColor: isSelected
+                          ? '#475569'
+                          : isVerified
+                          ? 'rgb(16, 185, 129)'
+                          : getConfidenceColor(annotation.confidence),
+                        backgroundColor: isSelected
+                          ? 'rgba(71, 85, 105, 0.15)'
+                          : isVerified
+                          ? 'rgba(16, 185, 129, 0.1)'
+                          : 'rgba(0, 0, 0, 0.05)',
+                        opacity: isSelected ? 1 : 0.7
+                      }}
+                    />
+
+                    {/* Numbered marker badge */}
+                    <div
+                      className="absolute flex items-center justify-center font-bold text-white shadow-lg"
+                      style={{
+                        top: '-12px',
+                        left: '-12px',
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        backgroundColor: isVerified
+                          ? 'rgb(16, 185, 129)'
+                          : getConfidenceColor(annotation.confidence),
+                        border: '2px solid white',
+                        fontSize: '14px',
+                        zIndex: 10
+                      }}
+                    >
+                      {markerNumber}
+                    </div>
+                  </div>
                 );
               })}
             </div>
@@ -312,10 +345,11 @@ export const DocumentAnnotationViewer: React.FC<DocumentAnnotationViewerProps> =
 
             {/* Entity Cards */}
             <div className="flex-1 overflow-auto p-4 space-y-3">
-              {annotations.map((annotation) => {
+              {annotations.map((annotation, index) => {
                 const badge = getConfidenceBadge(annotation.confidence);
                 const isSelected = selectedAnnotation === annotation.id;
                 const isVerified = annotation.status === 'verified' || annotation.status === 'corrected';
+                const markerNumber = index + 1;
 
                 return (
                   <div
@@ -329,50 +363,71 @@ export const DocumentAnnotationViewer: React.FC<DocumentAnnotationViewerProps> =
                     }`}
                     onClick={() => setSelectedAnnotation(annotation.id)}
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">
-                        {annotation.entity_label}
-                      </span>
-                      {!isVerified && (
-                        <span className={`text-xs px-2 py-1 rounded ${badge.color}`}>
-                          {badge.label}
-                        </span>
-                      )}
-                      {isVerified && (
-                        <span className="text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700">
-                          ✓ Verified
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="mb-3">
-                      <p className="text-sm font-semibold text-gray-900 break-words">
-                        {annotation.extracted_value}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Confidence: {Math.round(annotation.confidence * 100)}%
-                      </p>
-                    </div>
-
-                    {isVerified ? (
-                      <div className="flex items-center text-emerald-600 text-sm">
-                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        Verified by {annotation.verified_by || 'User'}
-                      </div>
-                    ) : (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleVerify(annotation.id);
+                    <div className="flex items-start gap-3">
+                      {/* Numbered marker matching PDF */}
+                      <div
+                        className="flex-shrink-0 flex items-center justify-center font-bold text-white shadow-md"
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          backgroundColor: isVerified
+                            ? 'rgb(16, 185, 129)'
+                            : getConfidenceColor(annotation.confidence),
+                          fontSize: '16px'
                         }}
-                        disabled={verifying === annotation.id}
-                        className="w-full py-2 px-4 bg-slate-600 text-white rounded hover:bg-slate-700 text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                       >
-                        {verifying === annotation.id ? 'Verifying...' : 'Verify'}
-                      </button>
-                    )}
+                        {markerNumber}
+                      </div>
+
+                      {/* Entity content */}
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-700">
+                            {annotation.entity_label}
+                          </span>
+                          {!isVerified && (
+                            <span className={`text-xs px-2 py-1 rounded ${badge.color}`}>
+                              {badge.label}
+                            </span>
+                          )}
+                          {isVerified && (
+                            <span className="text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700">
+                              ✓ Verified
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mb-3">
+                          <p className="text-sm font-semibold text-gray-900 break-words">
+                            {annotation.extracted_value}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Confidence: {Math.round(annotation.confidence * 100)}%
+                          </p>
+                        </div>
+
+                        {isVerified ? (
+                          <div className="flex items-center text-emerald-600 text-sm">
+                            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Verified by {annotation.verified_by || 'User'}
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleVerify(annotation.id);
+                            }}
+                            disabled={verifying === annotation.id}
+                            className="w-full py-2 px-4 bg-slate-600 text-white rounded hover:bg-slate-700 text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {verifying === annotation.id ? 'Verifying...' : 'Verify'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 );
               })}
