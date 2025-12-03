@@ -1316,45 +1316,33 @@ If an entity cannot be found, set value to null and confidence to 0.0."""
                 "stream": False
             }
 
-            # Try WITHOUT response_format since your LLM wrapper doesn't support structured outputs
-            # We'll rely on the prompt to generate JSON
-            print(f"   🚀 Sending request WITHOUT response_format (custom LLM wrapper)")
-            response = self.client.chat.completions.create(**request_params)
+            # Your LLM wrapper always returns streaming format, so we need to handle it
+            # Even though we set stream=False, it returns chat.completion.chunk objects
+            print(f"   🚀 Sending request (will force streaming collection due to LLM behavior)")
 
-            print("📥 Response received from LLM API")
-            print(f"   RAW Response object: {response}")
-            print(f"   RAW Response type: {type(response)}")
-            print(f"   RAW Response dir: {dir(response)}")
-            print(f"   Response object type: {type(response)}")
-            print(f"   Response has choices: {hasattr(response, 'choices')}")
+            # Always use streaming since the wrapper ignores stream=False
+            stream = self.client.chat.completions.create(
+                **request_params,
+                stream=True  # Force streaming since wrapper always returns chunks
+            )
 
-            if not hasattr(response, 'choices'):
-                raise ValueError(f"LLM response has no 'choices' attribute. Response type: {type(response)}")
+            print("📥 Collecting streaming chunks from LLM API...")
+            message_content = ""
+            chunk_count = 0
 
-            if len(response.choices) == 0:
-                raise ValueError(f"LLM response choices is empty")
+            for chunk in stream:
+                chunk_count += 1
+                print(f"   Chunk {chunk_count}: {chunk}")
 
-            print(f"   Number of choices: {len(response.choices)}")
+                if hasattr(chunk, 'choices') and len(chunk.choices) > 0:
+                    choice = chunk.choices[0]
+                    if hasattr(choice, 'delta') and hasattr(choice.delta, 'content'):
+                        delta_content = choice.delta.content
+                        if delta_content:
+                            print(f"   → Delta content: '{delta_content[:100]}'...")
+                            message_content += delta_content
 
-            choice = response.choices[0]
-            print(f"   RAW Choice object: {choice}")
-            print(f"   RAW Choice type: {type(choice)}")
-            print(f"   RAW Choice dir: {dir(choice)}")
-            print(f"   Choice has message: {hasattr(choice, 'message')}")
-
-            if not hasattr(choice, 'message'):
-                raise ValueError(f"LLM choice has no 'message' attribute")
-
-            message = choice.message
-            print(f"   RAW Message object: {message}")
-            print(f"   RAW Message type: {type(message)}")
-            print(f"   RAW Message dir: {dir(message)}")
-
-            message_content = message.content
-            print(f"   Message content type: {type(message_content)}")
-            print(f"   Message content is None: {message_content is None}")
-            print(f"   Message content length: {len(message_content) if message_content else 0}")
-
+            print(f"   ✅ Collected {chunk_count} chunks")
             print(f"\n   ==========================================")
             print(f"   === FULL MESSAGE CONTENT START ===")
             print(f"   ==========================================")
