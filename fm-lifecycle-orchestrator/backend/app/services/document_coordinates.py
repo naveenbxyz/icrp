@@ -5,41 +5,41 @@ from typing import Dict, Optional
 
 
 # Hardcoded coordinates for demo registration certificate
-# These coordinates are based on the generated PDF layout
+# These coordinates are extracted from the actual generated PDF using PyMuPDF
 DEMO_DOCUMENT_COORDINATES = {
     "legal_name": {
         "page": 1,
-        "bbox": {"x": 120, "y": 245, "width": 350, "height": 25},
+        "bbox": {"x": 131, "y": 310, "width": 333, "height": 24},
         "search_keywords": ["GLOBAL TRADE SOLUTIONS", "PTE LTD"]
+    },
+    "registration_number": {
+        "page": 1,
+        "bbox": {"x": 311, "y": 230, "width": 78, "height": 15},
+        "search_keywords": ["RC-2024-12345"]
+    },
+    "registration_date": {
+        "page": 1,
+        "bbox": {"x": 297, "y": 594, "width": 66, "height": 15},
+        "search_keywords": ["15 June 2023", "15th day of June, 2023"]
     },
     "jurisdiction": {
         "page": 1,
-        "bbox": {"x": 123, "y": 380, "width": 200, "height": 18},
+        "bbox": {"x": 78, "y": 452, "width": 50, "height": 15},
         "search_keywords": ["Singapore"]
     },
     "entity_type": {
         "page": 1,
-        "bbox": {"x": 220, "y": 420, "width": 220, "height": 18},
+        "bbox": {"x": 157, "y": 488, "width": 122, "height": 15},
         "search_keywords": ["Private Limited Company"]
-    },
-    "registration_date": {
-        "page": 1,
-        "bbox": {"x": 220, "y": 295, "width": 130, "height": 18},
-        "search_keywords": ["15 June 2023", "15th day of June, 2023"]
     },
     "expiry_date": {
         "page": 1,
-        "bbox": {"x": 200, "y": 510, "width": 120, "height": 18},
+        "bbox": {"x": 297, "y": 614, "width": 66, "height": 15},
         "search_keywords": ["15 June 2026"]
-    },
-    "registration_number": {
-        "page": 1,
-        "bbox": {"x": 270, "y": 210, "width": 140, "height": 18},
-        "search_keywords": ["RC-2024-12345"]
     },
     "registered_address": {
         "page": 1,
-        "bbox": {"x": 123, "y": 355, "width": 300, "height": 40},
+        "bbox": {"x": 78, "y": 436, "width": 147, "height": 31},
         "search_keywords": ["123 Marina Boulevard", "Singapore 018936"]
     }
 }
