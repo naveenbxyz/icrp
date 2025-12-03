@@ -1316,26 +1316,15 @@ If an entity cannot be found, set value to null and confidence to 0.0."""
                 "stream": False
             }
 
-            # Try with response_format if supported
-            try:
-                print(f"   Attempting with response_format={{\"type\": \"json_object\"}}")
-                response = self.client.chat.completions.create(
-                    **request_params,
-                    response_format={"type": "json_object"}
-                )
-                print(f"   ✅ Request with response_format succeeded")
-            except Exception as format_error:
-                # If response_format fails, try without it
-                print(f"   ❌ response_format not supported: {type(format_error).__name__}: {str(format_error)}")
-                print(f"   🔄 Retrying without response_format parameter...")
-                try:
-                    response = self.client.chat.completions.create(**request_params)
-                    print(f"   ✅ Request without response_format succeeded")
-                except Exception as retry_error:
-                    print(f"   ❌ Retry also failed: {type(retry_error).__name__}: {str(retry_error)}")
-                    raise
+            # Try WITHOUT response_format since your LLM wrapper doesn't support structured outputs
+            # We'll rely on the prompt to generate JSON
+            print(f"   🚀 Sending request WITHOUT response_format (custom LLM wrapper)")
+            response = self.client.chat.completions.create(**request_params)
 
             print("📥 Response received from LLM API")
+            print(f"   RAW Response object: {response}")
+            print(f"   RAW Response type: {type(response)}")
+            print(f"   RAW Response dir: {dir(response)}")
             print(f"   Response object type: {type(response)}")
             print(f"   Response has choices: {hasattr(response, 'choices')}")
 
@@ -1348,23 +1337,34 @@ If an entity cannot be found, set value to null and confidence to 0.0."""
             print(f"   Number of choices: {len(response.choices)}")
 
             choice = response.choices[0]
+            print(f"   RAW Choice object: {choice}")
+            print(f"   RAW Choice type: {type(choice)}")
+            print(f"   RAW Choice dir: {dir(choice)}")
             print(f"   Choice has message: {hasattr(choice, 'message')}")
 
             if not hasattr(choice, 'message'):
                 raise ValueError(f"LLM choice has no 'message' attribute")
 
-            message_content = choice.message.content
+            message = choice.message
+            print(f"   RAW Message object: {message}")
+            print(f"   RAW Message type: {type(message)}")
+            print(f"   RAW Message dir: {dir(message)}")
+
+            message_content = message.content
             print(f"   Message content type: {type(message_content)}")
+            print(f"   Message content is None: {message_content is None}")
             print(f"   Message content length: {len(message_content) if message_content else 0}")
 
+            print(f"\n   ==========================================")
+            print(f"   === FULL MESSAGE CONTENT START ===")
+            print(f"   ==========================================")
             if message_content:
-                # Show first 500 chars and last 100 chars to see if JSON is complete
-                print(f"   === FULL MESSAGE CONTENT START ===")
                 print(message_content)
-                print(f"   === FULL MESSAGE CONTENT END ===")
-                print(f"   Message content length: {len(message_content)} characters")
             else:
-                print(f"   Message content: (empty)")
+                print("   (empty or None)")
+            print(f"   ==========================================")
+            print(f"   === FULL MESSAGE CONTENT END ===")
+            print(f"   ==========================================\n")
 
             if not message_content:
                 raise ValueError("LLM returned empty content")
