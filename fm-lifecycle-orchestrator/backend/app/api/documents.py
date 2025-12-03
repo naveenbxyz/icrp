@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from ..database import get_db
 from ..models.document import Document, DocumentCategory, OCRStatus
 from ..models.client import Client
+from ..models.document_annotation import DocumentAnnotation
 from ..schemas.document import (
     DocumentResponse,
     DocumentValidationResult,
@@ -16,6 +17,8 @@ from ..schemas.document import (
 )
 from ..services.ai_service import ai_service
 from ..services.document_validator import DocumentValidator
+from ..services.document_coordinates import get_coordinates_for_demo_document, is_demo_document, get_entity_label
+import fitz  # PyMuPDF
 from ..config import settings
 
 
@@ -464,3 +467,213 @@ def ai_validate_document(document_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI validation failed: {str(e)}")
+
+
+# ============================================================================
+# DOCUMENT ANNOTATION ENDPOINTS (For AI-powered Document Review with Visual Highlights)
+# ============================================================================
+
+@router.post("/documents/{document_id}/annotate")
+async def annotate_document(document_id: int, db: Session = Depends(get_db)):
+    """
+    Extract entities using LLM and create annotations with coordinates for visual highlighting.
+    This endpoint is used for the AI-powered document review feature.
+    """
+    # 1. Get document
+    document = db.query(Document).filter(Document.id == document_id).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # 2. Get client details for validation context
+    client = db.query(Client).filter(Client.id == document.client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    try:
+        # 3. Extract text from PDF using PyMuPDF
+        extracted_text = ""
+        if document.file_path.lower().endswith('.pdf'):
+            try:
+                pdf_doc = fitz.open(document.file_path)
+                for page in pdf_doc:
+                    extracted_text += page.get_text()
+                pdf_doc.close()
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Failed to extract text from PDF: {str(e)}")
+        else:
+            raise HTTPException(status_code=400, detail="Only PDF documents are supported for annotation")
+
+        # Store extracted text in document if not already stored
+        if not document.extracted_text:
+            document.extracted_text = extracted_text
+            db.commit()
+
+        # 4. Use LLM/AI service to extract entities with confidence scores
+        entities = ai_service.extract_entities_with_llm(
+            extracted_text=extracted_text,
+            client_name=client.name,
+            country=client.country_of_incorporation,
+            entity_type=client.entity_type
+        )
+
+        # 5. Get coordinates for entities (hardcoded for demo document)
+        coordinates = get_coordinates_for_demo_document(document.filename)
+
+        if not coordinates:
+            # If not a demo document, return error for now
+            # In production, you would use actual OCR coordinates
+            raise HTTPException(
+                status_code=400,
+                detail="Annotation coordinates not available for this document. Please use the demo registration certificate."
+            )
+
+        # 6. Delete any existing annotations for this document
+        db.query(DocumentAnnotation).filter(
+            DocumentAnnotation.document_id == document_id
+        ).delete()
+
+        # 7. Create annotations for each extracted entity
+        annotations = []
+        for entity_type, entity_data in entities.items():
+            if entity_type in coordinates and entity_data.get("value"):
+                annotation = DocumentAnnotation(
+                    document_id=document_id,
+                    entity_type=entity_type,
+                    entity_label=get_entity_label(entity_type),
+                    extracted_value=entity_data["value"],
+                    confidence=entity_data["confidence"],
+                    page_number=coordinates[entity_type]["page"],
+                    bounding_box=coordinates[entity_type]["bbox"],
+                    status="auto_extracted"
+                )
+                db.add(annotation)
+                annotations.append(annotation)
+
+        db.commit()
+
+        # 8. Calculate overall confidence
+        overall_confidence = sum(e["confidence"] for e in entities.values() if e.get("confidence")) / len(entities) if entities else 0.0
+
+        # 9. Determine validation status
+        if overall_confidence >= 0.90:
+            validation_status = "verified"
+        elif overall_confidence >= 0.75:
+            validation_status = "needs_review"
+        else:
+            validation_status = "failed"
+
+        # 10. Update document OCR status
+        document.ocr_status = OCRStatus.COMPLETED
+        db.commit()
+
+        # 11. Return annotations
+        return {
+            "document_id": document_id,
+            "annotations": [
+                {
+                    "id": ann.id,
+                    "entity_type": ann.entity_type,
+                    "entity_label": ann.entity_label,
+                    "extracted_value": ann.extracted_value,
+                    "confidence": ann.confidence,
+                    "page_number": ann.page_number,
+                    "bounding_box": ann.bounding_box,
+                    "status": ann.status,
+                    "corrected_value": ann.corrected_value,
+                    "verified_by": ann.verified_by,
+                    "verified_at": ann.verified_at.isoformat() if ann.verified_at else None
+                }
+                for ann in annotations
+            ],
+            "overall_confidence": overall_confidence,
+            "validation_status": validation_status,
+            "message": "Document annotated successfully"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Annotation failed: {str(e)}")
+
+
+@router.get("/documents/{document_id}/annotations")
+def get_document_annotations(document_id: int, db: Session = Depends(get_db)):
+    """
+    Get all annotations for a document.
+    Returns entity extractions with coordinates for visual highlighting.
+    """
+    # Verify document exists
+    document = db.query(Document).filter(Document.id == document_id).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # Get annotations
+    annotations = db.query(DocumentAnnotation).filter(
+        DocumentAnnotation.document_id == document_id
+    ).order_by(DocumentAnnotation.page_number, DocumentAnnotation.id).all()
+
+    return [
+        {
+            "id": ann.id,
+            "entity_type": ann.entity_type,
+            "entity_label": ann.entity_label,
+            "extracted_value": ann.extracted_value,
+            "confidence": ann.confidence,
+            "page_number": ann.page_number,
+            "bounding_box": ann.bounding_box,
+            "status": ann.status,
+            "corrected_value": ann.corrected_value,
+            "verified_by": ann.verified_by,
+            "verified_at": ann.verified_at.isoformat() if ann.verified_at else None,
+            "notes": ann.notes
+        }
+        for ann in annotations
+    ]
+
+
+class AnnotationVerifyRequest(BaseModel):
+    verified_by: str = "Demo User"
+    corrected_value: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@router.put("/documents/annotations/{annotation_id}/verify")
+def verify_annotation(
+    annotation_id: int,
+    verify_request: AnnotationVerifyRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Mark an annotation as verified or corrected by a user.
+    This is used in the document review workflow.
+    """
+    # Get annotation
+    annotation = db.query(DocumentAnnotation).filter(
+        DocumentAnnotation.id == annotation_id
+    ).first()
+
+    if not annotation:
+        raise HTTPException(status_code=404, detail="Annotation not found")
+
+    # Update annotation
+    if verify_request.corrected_value:
+        annotation.status = "corrected"
+        annotation.corrected_value = verify_request.corrected_value
+    else:
+        annotation.status = "verified"
+
+    annotation.verified_by = verify_request.verified_by
+    annotation.verified_at = datetime.utcnow()
+    if verify_request.notes:
+        annotation.notes = verify_request.notes
+
+    db.commit()
+    db.refresh(annotation)
+
+    return {
+        "message": "Annotation verified successfully",
+        "annotation_id": annotation_id,
+        "status": annotation.status,
+        "verified_by": annotation.verified_by,
+        "verified_at": annotation.verified_at.isoformat()
+    }

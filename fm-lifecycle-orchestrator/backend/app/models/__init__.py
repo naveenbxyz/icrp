@@ -2,6 +2,7 @@ from .client import Client
 from .onboarding_stage import OnboardingStage
 from .regulatory_classification import RegulatoryClassification
 from .document import Document
+from .document_annotation import DocumentAnnotation
 from .task import Task
 from .classification_rule import ClassificationRule
 from .regime_eligibility import RegimeEligibility
@@ -13,6 +14,7 @@ __all__ = [
     "OnboardingStage",
     "RegulatoryClassification",
     "Document",
+    "DocumentAnnotation",
     "Task",
     "ClassificationRule",
     "RegimeEligibility",

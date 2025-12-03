@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { CheckCircle2, XCircle, AlertCircle, Clock, Mail, Send, X, FileText, Download, Upload } from 'lucide-react'
+import { DocumentAnnotationViewer } from './DocumentAnnotationViewer'
 
 interface DocumentRequirement {
   id: number
@@ -316,6 +317,11 @@ export default function DocumentRequirementsTab({ clientId, clientName }: Docume
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false)
   const [syncing, setSyncing] = useState(false)
 
+  // Document annotation viewer state
+  const [showAnnotationViewer, setShowAnnotationViewer] = useState(false)
+  const [currentDocument, setCurrentDocument] = useState<{ id: number; file_path: string } | null>(null)
+  const [uploading, setUploading] = useState(false)
+
   useEffect(() => {
     fetchDocumentRequirements()
   }, [clientId])
@@ -371,6 +377,80 @@ export default function DocumentRequirementsTab({ clientId, clientName }: Docume
     } catch (error) {
       console.error('Failed to send email', error)
       alert('Failed to send email')
+    }
+  }
+
+  const handleDocumentUpload = async (file: File, requirementId: number, category: string) => {
+    console.log('📤 Starting document upload:', file.name)
+    setUploading(true)
+    try {
+      // 1. Upload the document
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('document_category', category)
+      formData.append('uploaded_by', 'Demo User')
+
+      console.log('📤 Uploading to backend...')
+      const uploadResponse = await fetch(`http://localhost:8000/api/clients/${clientId}/documents`, {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text()
+        console.error('Upload failed:', errorText)
+        throw new Error(`Failed to upload document: ${errorText}`)
+      }
+
+      const uploadedDoc = await uploadResponse.json()
+      console.log('✅ Document uploaded:', uploadedDoc)
+
+      // 2. Trigger AI annotation processing
+      console.log('🤖 Starting AI annotation processing...')
+      const annotateResponse = await fetch(
+        `http://localhost:8000/api/documents/${uploadedDoc.id}/annotate`,
+        { method: 'POST' }
+      )
+
+      if (!annotateResponse.ok) {
+        const errorData = await annotateResponse.json().catch(() => ({}))
+        console.error('Annotation failed:', errorData)
+        throw new Error(errorData.detail || 'Failed to process document annotations')
+      }
+
+      const annotationResult = await annotateResponse.json()
+      console.log('✅ Annotations created:', annotationResult)
+
+      // 3. Open the annotation viewer
+      console.log('🎯 Opening annotation viewer')
+      console.log('Document path:', uploadedDoc.file_path)
+      setCurrentDocument({
+        id: uploadedDoc.id,
+        file_path: uploadedDoc.file_path
+      })
+      setShowAnnotationViewer(true)
+      console.log('✅ Annotation viewer should be visible')
+
+    } catch (error) {
+      console.error('❌ Document upload failed:', error)
+      alert(`Failed to upload document: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setShowAnnotationViewer(false)
+      setCurrentDocument(null)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleApproveDocument = async () => {
+    try {
+      // Refresh the document requirements to reflect the updated status
+      await fetchDocumentRequirements()
+      setShowAnnotationViewer(false)
+      setCurrentDocument(null)
+      alert('Document approved successfully!')
+    } catch (error) {
+      console.error('Failed to approve document', error)
+      alert('Failed to approve document. Please try again.')
     }
   }
 
@@ -673,13 +753,13 @@ export default function DocumentRequirementsTab({ clientId, clientName }: Docume
                         <label style={{ cursor: 'pointer' }}>
                           <input
                             type="file"
+                            accept=".pdf"
                             style={{ display: 'none' }}
+                            disabled={uploading}
                             onChange={(e) => {
                               const file = e.target.files?.[0]
                               if (file) {
-                                console.log(`Upload file for ${req.evidence_name}:`, file)
-                                // TODO: Implement actual file upload
-                                alert(`File upload functionality coming soon!\nFile: ${file.name}\nFor: ${req.evidence_name}`)
+                                handleDocumentUpload(file, req.id, req.category)
                               }
                             }}
                           />
@@ -726,6 +806,49 @@ export default function DocumentRequirementsTab({ clientId, clientName }: Docume
         selectedDocuments={selectedRequirements}
         onSend={handleSendEmail}
       />
+
+      {/* Document Annotation Viewer */}
+      {showAnnotationViewer && currentDocument && (
+        <DocumentAnnotationViewer
+          documentId={currentDocument.id}
+          documentPath={currentDocument.file_path}
+          onClose={() => {
+            setShowAnnotationViewer(false)
+            setCurrentDocument(null)
+          }}
+          onApprove={handleApproveDocument}
+        />
+      )}
+
+      {/* Uploading Overlay */}
+      {uploading && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999
+          }}
+        >
+          <div style={{
+            backgroundColor: 'white',
+            padding: '24px',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px'
+          }}>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span style={{ fontSize: '16px', fontWeight: '500' }}>Processing document...</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

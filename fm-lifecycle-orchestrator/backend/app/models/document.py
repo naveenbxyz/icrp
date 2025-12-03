@@ -48,3 +48,4 @@ class Document(Base):
     # Relationships
     client = relationship("Client", back_populates="documents")
     regulatory_classification = relationship("RegulatoryClassification", back_populates="documents")
+    annotations = relationship("DocumentAnnotation", back_populates="document", cascade="all, delete-orphan")

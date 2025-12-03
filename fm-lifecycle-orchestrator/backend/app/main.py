@@ -1,11 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from .config import settings
 from .database import engine, Base
 from .api import clients, onboarding, regulatory, documents, tasks, integrations, regimes, document_requirements, chat, insights, cx_approval
+import os
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+
+# Ensure uploads directory exists
+os.makedirs("uploads", exist_ok=True)
+os.makedirs("sample_documents", exist_ok=True)
 
 app = FastAPI(
     title="FM Client Lifecycle Orchestrator",
@@ -48,3 +54,9 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+
+# Mount static file directories for serving uploaded documents and samples
+# This allows the frontend to access PDFs via HTTP
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/sample_documents", StaticFiles(directory="sample_documents"), name="sample_documents")
