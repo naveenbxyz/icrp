@@ -1813,10 +1813,9 @@ def seed_data():
         db.flush()
 
         create_onboarding_stages(db, client12.id, [
-            {"name": StageName.LEGAL_ENTITY_SETUP, "status": StageStatus.COMPLETED, "assigned_team": "Entity Management",
-             "started_date": datetime.now() - timedelta(days=20), "completed_date": datetime.now() - timedelta(days=18)},
-            {"name": StageName.REG_CLASSIFICATION, "status": StageStatus.IN_PROGRESS, "assigned_team": "Compliance",
-             "started_date": datetime.now() - timedelta(days=18), "notes": "Awaiting product approval"},
+            {"name": StageName.LEGAL_ENTITY_SETUP, "status": StageStatus.IN_PROGRESS, "assigned_team": "Entity Management",
+             "started_date": datetime.now() - timedelta(days=20), "notes": "Awaiting product approval"},
+            {"name": StageName.REG_CLASSIFICATION, "status": StageStatus.NOT_STARTED, "assigned_team": "Compliance"},
             {"name": StageName.FM_ACCOUNT_REQUEST, "status": StageStatus.NOT_STARTED, "assigned_team": "FM Operations"},
             {"name": StageName.STATIC_DATA_ENRICHMENT, "status": StageStatus.NOT_STARTED, "assigned_team": "FM Ops - Data"},
             {"name": StageName.SSI_VALIDATION, "status": StageStatus.NOT_STARTED, "assigned_team": "SSI Team"},

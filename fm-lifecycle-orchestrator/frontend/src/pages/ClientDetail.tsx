@@ -1449,6 +1449,56 @@ export default function ClientDetail() {
                 </div>
               </div>
 
+              {/* Material Changes Banner - Show if client has country change or other material changes */}
+              {client && client.client_attributes?.country_change_date && (
+                <div style={{
+                  marginTop: '24px',
+                  padding: '20px',
+                  backgroundColor: '#fffbeb',
+                  borderRadius: '8px',
+                  border: '2px solid #fbbf24'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '8px',
+                      backgroundColor: '#fef3c7',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '20px'
+                    }}>
+                      ⚠️
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '16px', fontWeight: '600', color: '#92400e', marginBottom: '8px' }}>
+                        Material Change Detected
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#92400e', marginBottom: '12px', lineHeight: '1.6' }}>
+                        <strong>Country of Incorporation Changed:</strong> {client.client_attributes.previous_country_of_incorporation} → {client.country_of_incorporation}
+                        <br />
+                        <strong>Change Date:</strong> {new Date(client.client_attributes.country_change_date).toLocaleDateString()}
+                        <br />
+                        <strong>Reason:</strong> {client.client_attributes.change_reason || 'Not specified'}
+                        <br />
+                        <strong>Impact:</strong> Periodic review triggered - Classification needs re-evaluation for new jurisdiction-specific regimes
+                      </div>
+                      <div style={{
+                        padding: '10px 14px',
+                        backgroundColor: '#fef3c7',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        color: '#78350f',
+                        border: '1px solid #fbbf24'
+                      }}>
+                        💡 <strong>Demo Note:</strong> This demonstrates how the system automatically detects material changes in client circumstances (country relocation, entity type changes, etc.) and triggers periodic review workflows. The classification engine was automatically re-run to evaluate new jurisdiction-specific regimes.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Client Central Product Approval Button - Show if Legal Entity Setup is in progress */}
               {client && client.onboarding_status === 'in_progress' &&
                stages.some(s => s.stage_name === 'Legal Entity Setup' && s.status === 'in_progress') && (
