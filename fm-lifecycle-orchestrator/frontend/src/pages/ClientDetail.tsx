@@ -1555,7 +1555,12 @@ export default function ClientDetail() {
 
                   {classifications.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '32px', color: '#6b7280', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px dashed #d1d5db' }}>
-                      <div style={{ fontSize: '14px' }}>No classifications yet</div>
+                      <div style={{ fontSize: '14px', marginBottom: '8px' }}>No manual classifications</div>
+                      {eligibilities.length > 0 && (
+                        <div style={{ fontSize: '12px', color: '#059669', marginTop: '8px' }}>
+                          ✓ {eligibilities.filter(e => e.is_eligible).length} regime{eligibilities.filter(e => e.is_eligible).length !== 1 ? 's' : ''} evaluated via rule engine (see below)
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1970,22 +1975,29 @@ export default function ClientDetail() {
                   <p style={{ fontSize: '14px' }}>Regime eligibility evaluations will appear here once processed</p>
                 </div>
               ) : eligibilities.length > 0 ? (
-                <div>
+                <div style={{
+                  padding: '24px',
+                  backgroundColor: '#f0fdf4',
+                  borderRadius: '12px',
+                  border: '2px solid #86efac'
+                }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#059669', margin: 0 }}>
-                      Rule-Based Assessment
+                    <span style={{ fontSize: '24px' }}>✅</span>
+                    <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#059669', margin: 0 }}>
+                      Regime Eligibility Results
                     </h3>
                     <span style={{
                       fontSize: '11px',
                       fontWeight: '600',
                       padding: '4px 10px',
-                      backgroundColor: '#d1fae5',
-                      color: '#059669',
+                      backgroundColor: '#dcfce7',
+                      color: '#166534',
                       borderRadius: '12px',
                       textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
+                      letterSpacing: '0.5px',
+                      border: '1px solid #86efac'
                     }}>
-                      Current
+                      {eligibilities.filter(e => e.is_eligible).length} ELIGIBLE
                     </span>
                   </div>
                   <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>
