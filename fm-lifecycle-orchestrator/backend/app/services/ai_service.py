@@ -1299,46 +1299,99 @@ If an entity cannot be found, set value to null and confidence to 0.0."""
             print(f"   Prompt length: {len(prompt)} chars")
 
             print("📤 Sending request to LLM API...")
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
+
+            # For entity extraction, we ALWAYS use non-streaming mode to get complete JSON
+            # Even if LLM_STREAM=true in config, we override it here
+            print(f"   Stream mode: False (forced for entity extraction)")
+
+            # Try with response_format first (OpenAI standard)
+            # If it fails, retry without it (for LLMs that don't support this parameter)
+            request_params = {
+                "model": self.model,
+                "messages": [
                     {"role": "system", "content": "You are a document analysis AI that extracts structured data from KYC documents. Always respond with valid JSON."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.2,  # Low temperature for more consistent extraction
-                response_format={"type": "json_object"}
-            )
+                "temperature": 0.2,
+                "stream": False
+            }
+
+            # Try with response_format if supported
+            try:
+                print(f"   Attempting with response_format={{\"type\": \"json_object\"}}")
+                response = self.client.chat.completions.create(
+                    **request_params,
+                    response_format={"type": "json_object"}
+                )
+            except Exception as format_error:
+                # If response_format fails, try without it
+                print(f"   ⚠️ response_format not supported: {str(format_error)}")
+                print(f"   Retrying without response_format parameter...")
+                response = self.client.chat.completions.create(**request_params)
 
             print("📥 Response received from LLM API")
             print(f"   Response object type: {type(response)}")
-            print(f"   Response object: {response}")
             print(f"   Response has choices: {hasattr(response, 'choices')}")
 
             if not hasattr(response, 'choices'):
-                raise ValueError(f"LLM response has no 'choices' attribute. Response: {response}")
+                raise ValueError(f"LLM response has no 'choices' attribute. Response type: {type(response)}")
 
             if len(response.choices) == 0:
-                raise ValueError(f"LLM response choices is empty. Response: {response}")
+                raise ValueError(f"LLM response choices is empty")
 
             print(f"   Number of choices: {len(response.choices)}")
 
             choice = response.choices[0]
-            print(f"   Choice object: {choice}")
             print(f"   Choice has message: {hasattr(choice, 'message')}")
 
             if not hasattr(choice, 'message'):
-                raise ValueError(f"LLM choice has no 'message' attribute. Choice: {choice}")
+                raise ValueError(f"LLM choice has no 'message' attribute")
 
             message_content = choice.message.content
             print(f"   Message content type: {type(message_content)}")
             print(f"   Message content length: {len(message_content) if message_content else 0}")
-            print(f"   Message content (first 500 chars): {message_content[:500] if message_content else '(empty)'}")
+
+            if message_content:
+                # Show first 500 chars and last 100 chars to see if JSON is complete
+                preview = message_content[:500]
+                if len(message_content) > 500:
+                    preview += "\n   ... (truncated) ...\n   "
+                    preview += message_content[-100:]
+                print(f"   Message content preview:\n{preview}")
+            else:
+                print(f"   Message content: (empty)")
 
             if not message_content:
                 raise ValueError("LLM returned empty content")
 
             print("🔄 Attempting to parse JSON...")
-            entities = json.loads(message_content)
+
+            # Try to extract JSON if it's wrapped in markdown code blocks or has extra text
+            content_to_parse = message_content.strip()
+
+            # Check if content is wrapped in markdown code blocks
+            if content_to_parse.startswith("```"):
+                print("   Detected markdown code block, extracting JSON...")
+                # Remove ```json or ``` from start and ``` from end
+                lines = content_to_parse.split('\n')
+                if lines[0].startswith("```"):
+                    lines = lines[1:]  # Remove first line
+                if lines[-1].strip() == "```":
+                    lines = lines[:-1]  # Remove last line
+                content_to_parse = '\n'.join(lines).strip()
+                print(f"   Cleaned content (first 200 chars): {content_to_parse[:200]}")
+
+            # Try to find JSON object if content has extra text
+            if not content_to_parse.startswith('{'):
+                print("   Content doesn't start with '{', searching for JSON object...")
+                start_idx = content_to_parse.find('{')
+                if start_idx != -1:
+                    end_idx = content_to_parse.rfind('}')
+                    if end_idx != -1:
+                        content_to_parse = content_to_parse[start_idx:end_idx+1]
+                        print(f"   Extracted JSON (first 200 chars): {content_to_parse[:200]}")
+
+            entities = json.loads(content_to_parse)
             print(f"✅ JSON parsed successfully, keys: {list(entities.keys())}")
 
             print(f"✅ LLM entity extraction successful")

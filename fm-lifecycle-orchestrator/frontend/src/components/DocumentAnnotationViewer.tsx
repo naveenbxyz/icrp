@@ -85,15 +85,15 @@ export const DocumentAnnotationViewer: React.FC<DocumentAnnotationViewerProps> =
   };
 
   const getConfidenceColor = (confidence: number): string => {
-    if (confidence >= 0.90) return 'rgb(34, 197, 94)'; // Green
-    if (confidence >= 0.75) return 'rgb(251, 191, 36)'; // Amber
-    return 'rgb(239, 68, 68)'; // Red
+    if (confidence >= 0.90) return 'rgb(16, 185, 129)'; // Emerald (softer green)
+    if (confidence >= 0.75) return 'rgb(245, 158, 11)'; // Amber (more muted)
+    return 'rgb(220, 38, 38)'; // Red (less bright)
   };
 
   const getConfidenceBadge = (confidence: number) => {
-    if (confidence >= 0.90) return { label: 'High', color: 'bg-green-100 text-green-800' };
-    if (confidence >= 0.75) return { label: 'Medium', color: 'bg-amber-100 text-amber-800' };
-    return { label: 'Low', color: 'bg-red-100 text-red-800' };
+    if (confidence >= 0.90) return { label: 'High', color: 'bg-emerald-100 text-emerald-700' };
+    if (confidence >= 0.75) return { label: 'Medium', color: 'bg-amber-100 text-amber-700' };
+    return { label: 'Low', color: 'bg-red-100 text-red-700' };
   };
 
   const handleVerify = async (annotationId: number) => {
@@ -136,7 +136,7 @@ export const DocumentAnnotationViewer: React.FC<DocumentAnnotationViewerProps> =
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg shadow-xl p-8">
           <div className="flex items-center space-x-3">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
             <span className="text-lg">Loading document annotations...</span>
           </div>
         </div>
@@ -206,10 +206,10 @@ export const DocumentAnnotationViewer: React.FC<DocumentAnnotationViewerProps> =
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+        <div className="px-6 py-4 border-b flex items-center justify-between bg-gradient-to-r from-slate-700 to-slate-800 text-white rounded-t-lg">
           <div>
             <h2 className="text-xl font-semibold">AI Document Review</h2>
-            <p className="text-sm text-blue-100">Verify extracted entities from document</p>
+            <p className="text-sm text-slate-300">Verify extracted entities from document</p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-sm">
@@ -217,7 +217,7 @@ export const DocumentAnnotationViewer: React.FC<DocumentAnnotationViewerProps> =
             </div>
             <button
               onClick={onClose}
-              className="text-white hover:text-blue-200 text-2xl font-bold"
+              className="text-white hover:text-slate-300 text-2xl font-bold"
             >
               ×
             </button>
@@ -242,7 +242,7 @@ export const DocumentAnnotationViewer: React.FC<DocumentAnnotationViewerProps> =
                 }}
                 loading={
                   <div className="flex items-center justify-center py-20">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-600"></div>
                     <span className="ml-3">Loading PDF...</span>
                   </div>
                 }
@@ -265,9 +265,9 @@ export const DocumentAnnotationViewer: React.FC<DocumentAnnotationViewerProps> =
                     key={annotation.id}
                     className={`absolute border-2 cursor-pointer transition-all ${
                       isSelected
-                        ? 'border-blue-500 bg-blue-100 bg-opacity-40 z-10'
+                        ? 'border-slate-600 bg-slate-200 bg-opacity-40 z-10'
                         : isVerified
-                        ? 'border-green-500 bg-green-100 bg-opacity-20'
+                        ? 'border-emerald-600 bg-emerald-100 bg-opacity-20'
                         : 'bg-opacity-20'
                     }`}
                     style={{
@@ -275,8 +275,8 @@ export const DocumentAnnotationViewer: React.FC<DocumentAnnotationViewerProps> =
                       top: `${annotation.bounding_box.y * pdfScale}px`,
                       width: `${annotation.bounding_box.width * pdfScale}px`,
                       height: `${annotation.bounding_box.height * pdfScale}px`,
-                      borderColor: isVerified ? getConfidenceColor(1.0) : getConfidenceColor(annotation.confidence),
-                      backgroundColor: isVerified ? 'rgba(34, 197, 94, 0.1)' : getConfidenceColor(annotation.confidence),
+                      borderColor: isVerified ? 'rgb(16, 185, 129)' : getConfidenceColor(annotation.confidence),
+                      backgroundColor: isVerified ? 'rgba(16, 185, 129, 0.1)' : getConfidenceColor(annotation.confidence),
                     }}
                     onClick={() => setSelectedAnnotation(annotation.id)}
                     title={`${annotation.entity_label}: ${annotation.extracted_value} (${Math.round(annotation.confidence * 100)}%)`}
@@ -298,7 +298,7 @@ export const DocumentAnnotationViewer: React.FC<DocumentAnnotationViewerProps> =
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
                 <div
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-300 flex items-center justify-end pr-2"
+                  className="bg-gradient-to-r from-slate-500 to-slate-600 h-3 rounded-full transition-all duration-300 flex items-center justify-end pr-2"
                   style={{ width: `${annotations.length > 0 ? (verifiedCount / annotations.length) * 100 : 0}%` }}
                 >
                   {verifiedCount > 0 && (
@@ -322,9 +322,9 @@ export const DocumentAnnotationViewer: React.FC<DocumentAnnotationViewerProps> =
                     key={annotation.id}
                     className={`bg-white p-4 rounded-lg border-2 transition-all cursor-pointer hover:shadow-md ${
                       isSelected
-                        ? 'border-blue-500 shadow-md'
+                        ? 'border-slate-500 shadow-md'
                         : isVerified
-                        ? 'border-green-200'
+                        ? 'border-emerald-200'
                         : 'border-gray-200'
                     }`}
                     onClick={() => setSelectedAnnotation(annotation.id)}
@@ -339,7 +339,7 @@ export const DocumentAnnotationViewer: React.FC<DocumentAnnotationViewerProps> =
                         </span>
                       )}
                       {isVerified && (
-                        <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
+                        <span className="text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700">
                           ✓ Verified
                         </span>
                       )}
@@ -355,7 +355,7 @@ export const DocumentAnnotationViewer: React.FC<DocumentAnnotationViewerProps> =
                     </div>
 
                     {isVerified ? (
-                      <div className="flex items-center text-green-600 text-sm">
+                      <div className="flex items-center text-emerald-600 text-sm">
                         <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
@@ -368,7 +368,7 @@ export const DocumentAnnotationViewer: React.FC<DocumentAnnotationViewerProps> =
                           handleVerify(annotation.id);
                         }}
                         disabled={verifying === annotation.id}
-                        className="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                        className="w-full py-2 px-4 bg-slate-600 text-white rounded hover:bg-slate-700 text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                       >
                         {verifying === annotation.id ? 'Verifying...' : 'Verify'}
                       </button>
@@ -385,7 +385,7 @@ export const DocumentAnnotationViewer: React.FC<DocumentAnnotationViewerProps> =
                 disabled={!allVerified}
                 className={`w-full py-3 px-4 rounded font-medium transition-all ${
                   allVerified
-                    ? 'bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-xl'
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg hover:shadow-xl'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
