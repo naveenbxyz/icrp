@@ -109,7 +109,8 @@ export function InternalDocumentBrowser({ clientId, legalEntityId, onDocumentUpl
   const getSystemColor = (system: string) => {
     switch (system) {
       case 'SX': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'CX': return 'bg-green-100 text-green-800 border-green-200';
+      case 'CX':
+      case 'Client Central': return 'bg-green-100 text-green-800 border-green-200';
       case 'WX': return 'bg-orange-100 text-orange-800 border-orange-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -209,7 +210,7 @@ export function InternalDocumentBrowser({ clientId, legalEntityId, onDocumentUpl
         <div>
           <h3 className="text-lg font-semibold">Internal Document Sources</h3>
           <p className="text-sm text-gray-600 mt-1">
-            Upload documents from SX, CX, or WX systems with automatic OCR/LLM processing
+            Upload documents from SX, Client Central, or WX systems with automatic OCR/LLM processing
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchDocuments}>
@@ -226,7 +227,7 @@ export function InternalDocumentBrowser({ clientId, legalEntityId, onDocumentUpl
 
       <div className="space-y-6">
         {sxDocuments.length > 0 && renderDocumentList(sxDocuments, 'SX')}
-        {cxDocuments.length > 0 && renderDocumentList(cxDocuments, 'CX')}
+        {cxDocuments.length > 0 && renderDocumentList(cxDocuments, 'Client Central')}
         {wxDocuments.length > 0 && renderDocumentList(wxDocuments, 'WX')}
 
         {sxDocuments.length === 0 && cxDocuments.length === 0 && wxDocuments.length === 0 && !error && (

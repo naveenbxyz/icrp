@@ -803,7 +803,7 @@ export default function ClientDetail() {
   const [error, setError] = useState<string | null>(null)
   const [isLegacyExpanded, setIsLegacyExpanded] = useState(false)
 
-  // CX sync state
+  // Client Central sync state
   const [cxSyncStatus, setCxSyncStatus] = useState<any>(null)
   const [publishingToCX, setPublishingToCX] = useState(false)
 
@@ -892,7 +892,7 @@ export default function ClientDetail() {
       const result = await response.json()
 
       // Show success notification
-      alert(`CX Product Approval Simulated!\n\n` +
+      alert(`Client Central Product Approval Simulated!\n\n` +
             `Product Approved: ${result.product_approved}\n` +
             `Regimes Evaluated: ${result.regimes_evaluated}\n` +
             `Eligible Regimes: ${result.eligible_regimes.length}`)
@@ -909,8 +909,8 @@ export default function ClientDetail() {
         setEligibilities(eligData)
       }
     } catch (error) {
-      console.error('Failed to simulate CX approval:', error)
-      alert('Failed to simulate CX product approval')
+      console.error('Failed to simulate Client Central approval:', error)
+      alert('Failed to simulate Client Central product approval')
     } finally {
       setLoading(false)
     }
@@ -923,7 +923,7 @@ export default function ClientDetail() {
       const data = await response.json()
       setCxSyncStatus(data)
     } catch (error) {
-      console.error('Failed to fetch CX sync status:', error)
+      console.error('Failed to fetch Client Central sync status:', error)
     }
   }
 
@@ -936,16 +936,16 @@ export default function ClientDetail() {
       })
       const result = await response.json()
 
-      alert(`Classification Published to CX Successfully!\n\n` +
-            `CX Reference ID: ${result.cx_reference_id}\n` +
+      alert(`Classification Published to Client Central Successfully!\n\n` +
+            `Client Central Reference ID: ${result.cx_reference_id}\n` +
             `Regimes Published: ${result.regimes_published}\n` +
             `Data Quality Warnings: ${result.data_quality_warnings.length}`)
 
-      // Refresh CX sync status
+      // Refresh Client Central sync status
       await fetchCXSyncStatus()
     } catch (error) {
-      console.error('Failed to publish to CX:', error)
-      alert('Failed to publish classification to CX')
+      console.error('Failed to publish to Client Central:', error)
+      alert('Failed to publish classification to Client Central')
     } finally {
       setPublishingToCX(false)
     }
@@ -965,7 +965,7 @@ export default function ClientDetail() {
     }
   }
 
-  // Fetch CX sync status when regulatory tab is opened
+  // Fetch Client Central sync status when regulatory tab is opened
   useEffect(() => {
     if (activeTab === 'regulatory' && clientId) {
       fetchCXSyncStatus()
@@ -1448,7 +1448,7 @@ export default function ClientDetail() {
                 </div>
               </div>
 
-              {/* CX Product Approval Button - Show if Legal Entity Setup is in progress */}
+              {/* Client Central Product Approval Button - Show if Legal Entity Setup is in progress */}
               {client && client.onboarding_status === 'in_progress' &&
                stages.some(s => s.stage_name === 'Legal Entity Setup' && s.status === 'in_progress') && (
                 <div style={{
@@ -1459,10 +1459,10 @@ export default function ClientDetail() {
                   border: '1px solid #3b82f6'
                 }}>
                   <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e40af', marginBottom: '8px' }}>
-                    CX Product Approval Required
+                    Client Central Product Approval Required
                   </div>
                   <div style={{ fontSize: '12px', color: '#1e40af', marginBottom: '12px' }}>
-                    Simulate product approval from CX to trigger regulatory classification across {regimes.length}+ regimes
+                    Simulate product approval from Client Central to trigger regulatory classification across {regimes.length}+ regimes
                   </div>
                   <button
                     onClick={handleSimulateCXApproval}
@@ -1486,7 +1486,7 @@ export default function ClientDetail() {
                       if (!loading) e.currentTarget.style.backgroundColor = '#3b82f6'
                     }}
                   >
-                    {loading ? 'Processing...' : '▶ Simulate CX Product Approval'}
+                    {loading ? 'Processing...' : '▶ Simulate Client Central Product Approval'}
                   </button>
                 </div>
               )}
@@ -2158,7 +2158,7 @@ export default function ClientDetail() {
                 </div>
               ) : null}
 
-              {/* CX Publication Section */}
+              {/* Client Central Publication Section */}
               <div style={{ marginTop: '32px', backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '2px solid #e5e7eb' }}>
                 <div style={{ marginBottom: '20px' }}>
                   <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -2294,7 +2294,7 @@ export default function ClientDetail() {
                     </div>
                   </div>
                   <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Can Publish to CX</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Can Publish to Client Central</div>
                     <div style={{ fontSize: '16px', fontWeight: '600', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
                       <CheckCircle2 size={20} />
                       {documentValidation.can_publish_to_cx ? 'Yes' : 'No'}
