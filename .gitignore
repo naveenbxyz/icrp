@@ -216,3 +216,6 @@ __marimo__/
 fm-lifecycle-orchestrator/.DS_Store
 .DS_Store
 .DS_Store
+.claude/scheduled_tasks.lock
+fm-lifecycle-orchestrator/backend/fm_orchestrator.db
+fm-lifecycle-orchestrator/backend/fm_orchestrator.db

@@ -1,12 +1,46 @@
-import { useParams, useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { Fragment, useEffect, useState, type ReactNode } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Ban,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ClipboardList,
+  FileCheck,
+  FileText,
+  LayoutDashboard,
+  ListTodo,
+  Network,
+  RefreshCw,
+  Scale,
+  Send,
+  Target,
+  XCircle,
+  type LucideIcon,
+} from 'lucide-react'
+
 import { clientsApi, onboardingApi, regulatoryApi } from '../lib/api.ts'
-import type { Client, OnboardingStage, RegulatoryClassification, RegimeEligibility, DataQualityResult, RiskScore } from '../types/index.ts'
-import { RegulatoryFramework } from '../types/index.ts'
+import type {
+  Client,
+  DataQualityResult,
+  OnboardingStage,
+  RegimeEligibility,
+  RegulatoryClassification,
+  RiskScore,
+} from '../types/index.ts'
+
 import RegulatoryClassificationCard from '../components/RegulatoryClassificationCard.tsx'
 import RiskBadge from '../components/RiskBadge.tsx'
-import { AlertCircle, CheckCircle2, XCircle, AlertTriangle, RefreshCw, FileCheck, LayoutDashboard, Shield, FileText, ListTodo, ArrowLeft, Upload, Send } from 'lucide-react'
 import DocumentRequirementsTab from '../components/DocumentRequirementsTab.tsx'
+
+import { Card } from '../components/ui/card'
+import { Button } from '../components/ui/button'
+import { Badge, type BadgeProps } from '../components/ui/badge'
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert'
+import { StatusBadge } from '../components/dashboard/StatusBadge'
+import { cn } from '../lib/utils'
 
 const STAGES = [
   'Legal Entity Setup',
@@ -14,783 +48,403 @@ const STAGES = [
   'FM Account Request',
   'Static Data Enrichment',
   'SSI Validation',
-  'Valuation Setup'
+  'Valuation Setup',
+] as const
+
+type TabId = 'overview' | 'regulatory' | 'documents' | 'tasks'
+
+const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'regulatory', label: 'Regulatory Due Diligence', icon: FileCheck },
+  { id: 'documents', label: 'Document Requirements', icon: FileText },
+  { id: 'tasks', label: 'Tasks', icon: ListTodo },
 ]
 
-type TabType = 'overview' | 'regulatory' | 'documents' | 'tasks'
+// -------------------------------------------------------------
+// Helpers
+// -------------------------------------------------------------
 
-// Helper component for Documentation Requirements Lane
-function DocumentRequirementsLane({ clientId }: { clientId: number }) {
+function formatStatusLabel(s: string): string {
+  return s
+    .split('_')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+}
+
+function docStatusToSubtleVariant(status: string): BadgeProps['variant'] {
+  switch (status) {
+    case 'compliant':
+      return 'subtle-success'
+    case 'missing':
+      return 'subtle-destructive'
+    case 'expired':
+      return 'subtle-warning'
+    case 'pending_review':
+      return 'subtle-primary'
+    default:
+      return 'subtle-default'
+  }
+}
+
+// -------------------------------------------------------------
+// Document Requirements Lane (Overview tab, right column)
+// -------------------------------------------------------------
+
+function DocumentRequirementsLane({ clientId }: { clientId: string | undefined }) {
   const [requirements, setRequirements] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchRequirements = async () => {
-      try {
-        const res = await fetch(`http://localhost:8000/api/clients/${clientId}/document-requirements`)
-        const data = await res.json()
-        setRequirements(data)
-      } catch (err) {
-        console.error('Failed to fetch document requirements', err)
-      } finally {
-        setLoading(false)
-      }
+    if (!clientId) return
+    let cancelled = false
+    setLoading(true)
+    fetch(`http://localhost:8000/api/clients/${clientId}/document-requirements`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setRequirements(data)
+      })
+      .catch((err) => console.error('Failed to fetch document requirements', err))
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
     }
-    fetchRequirements()
   }, [clientId])
 
   if (loading) {
     return (
-      <div className="text-muted-foreground" style={{ textAlign: 'center', padding: '32px' }}>
-        <div style={{ fontSize: '14px' }}>Loading requirements...</div>
+      <div className="rounded-md border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+        Loading requirements…
       </div>
     )
   }
 
-  if (!requirements || requirements.regimes?.length === 0) {
+  if (!requirements || !requirements.regimes || requirements.regimes.length === 0) {
     return (
-      <div className="text-muted-foreground" style={{ textAlign: 'center', padding: '32px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px dashed #d1d5db' }}>
-        <div style={{ fontSize: '14px' }}>No requirements yet</div>
+      <div className="rounded-md border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+        No requirements yet
       </div>
     )
   }
 
   const summary = requirements.summary
+  const pct: number = summary.compliance_percentage
+  const pctTone =
+    pct >= 80 ? 'text-success' : pct >= 50 ? 'text-warning' : 'text-destructive'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      {/* Summary Card */}
-      <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>Overall Compliance</div>
-          <div className={summary.compliance_percentage >= 80 ? 'text-success' : summary.compliance_percentage >= 50 ? 'text-warning' : 'text-destructive'} style={{
-            fontSize: '18px',
-            fontWeight: '700'
-          }}>
-            {summary.compliance_percentage}%
+    <div className="space-y-3">
+      <Card>
+        <div className="flex items-center justify-between border-b border-border px-3 py-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Overall compliance
+          </div>
+          <div className={cn('text-lg font-semibold tabular-nums', pctTone)}>
+            {pct}%
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', fontSize: '11px' }}>
-          <div style={{ padding: '6px', backgroundColor: 'white', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
-            <div className="text-muted-foreground">Compliant</div>
-            <div className="text-success" style={{ fontWeight: '600' }}>{summary.compliant_count}</div>
-          </div>
-          <div style={{ padding: '6px', backgroundColor: 'white', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
-            <div className="text-muted-foreground">Missing</div>
-            <div className="text-destructive" style={{ fontWeight: '600' }}>{summary.missing_count}</div>
-          </div>
-          <div style={{ padding: '6px', backgroundColor: 'white', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
-            <div className="text-muted-foreground">Expired</div>
-            <div className="text-warning" style={{ fontWeight: '600' }}>{summary.expired_count}</div>
-          </div>
-          <div style={{ padding: '6px', backgroundColor: 'white', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
-            <div className="text-muted-foreground">Pending Review</div>
-            <div className="text-info" style={{ fontWeight: '600' }}>{summary.pending_review_count}</div>
-          </div>
+        <div className="grid grid-cols-2 divide-x divide-y divide-border">
+          <MiniStat label="Compliant" value={summary.compliant_count} tone="success" />
+          <MiniStat label="Missing" value={summary.missing_count} tone="destructive" />
+          <MiniStat label="Expired" value={summary.expired_count} tone="warning" />
+          <MiniStat
+            label="Pending review"
+            value={summary.pending_review_count}
+            tone="primary"
+          />
         </div>
-      </div>
+      </Card>
 
-      {/* Regime-specific Requirements */}
       {requirements.regimes.map((regime: any) => (
-        <div key={regime.regime} style={{ padding: '12px', backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-          <div style={{ fontSize: '12px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>{regime.regime}</div>
-          <div className="text-muted-foreground" style={{ fontSize: '11px' }}>
-            {regime.compliant_count}/{regime.total_requirements} compliant
-            {regime.missing_count > 0 && (
-              <span className="text-destructive" style={{ marginLeft: '8px', fontWeight: '600' }}>
-                • {regime.missing_count} missing
-              </span>
-            )}
+        <Card key={regime.regime} className="p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-sm font-medium text-foreground">{regime.regime}</div>
+            <div className="text-xs text-muted-foreground">
+              {regime.compliant_count}/{regime.total_requirements} compliant
+              {regime.missing_count > 0 && (
+                <span className="ml-2 font-semibold text-destructive">
+                  • {regime.missing_count} missing
+                </span>
+              )}
+            </div>
           </div>
-          {/* Show first few requirements with status */}
-          <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <ul className="space-y-1.5">
             {regime.requirements.slice(0, 3).map((req: any) => (
-              <div key={req.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '10px' }}>
-                <span className={req.status === 'compliant' ? 'bg-success' : req.status === 'missing' ? 'bg-destructive' : req.status === 'expired' ? 'bg-warning' : 'bg-info'} style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%'
-                }} />
-                <span className="text-muted-foreground" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <li key={req.id} className="flex items-center gap-2 text-xs">
+                <span
+                  className={cn(
+                    'inline-block h-1.5 w-1.5 shrink-0 rounded-full',
+                    req.status === 'compliant' && 'bg-success',
+                    req.status === 'missing' && 'bg-destructive',
+                    req.status === 'expired' && 'bg-warning',
+                    req.status === 'pending_review' && 'bg-primary',
+                  )}
+                />
+                <span className="flex-1 truncate text-muted-foreground">
                   {req.evidence_name}
                 </span>
-                <span className={req.status === 'compliant' ? 'bg-success/10 text-success' : req.status === 'missing' ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'} style={{
-                  fontSize: '9px',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  textTransform: 'capitalize'
-                }}>
-                  {req.status}
-                </span>
-              </div>
+                <Badge variant={docStatusToSubtleVariant(req.status)}>
+                  {formatStatusLabel(req.status)}
+                </Badge>
+              </li>
             ))}
             {regime.requirements.length > 3 && (
-              <div className="text-muted-foreground" style={{ fontSize: '10px', marginTop: '4px' }}>
+              <li className="pt-1 text-[11px] text-muted-foreground">
                 +{regime.requirements.length - 3} more requirements
-              </div>
+              </li>
             )}
-          </div>
-        </div>
+          </ul>
+        </Card>
       ))}
     </div>
   )
 }
 
-// Helper component for Data Quality Warnings
-function DataQualityWarnings({
-  clientId,
-  eligibilities,
-  dataQuality
+function MiniStat({
+  label,
+  value,
+  tone,
 }: {
-  clientId: number,
-  eligibilities: RegimeEligibility[],
-  dataQuality: Record<string, DataQualityResult>
+  label: string
+  value: number
+  tone: 'success' | 'destructive' | 'warning' | 'primary'
 }) {
-  // Collect all warnings from all regimes
-  const allWarnings: Array<{ regime: string; warnings: string[]; score: number }> = []
-
-  eligibilities.forEach((elig) => {
-    const quality = dataQuality[`${clientId}_${elig.regime}`]
-    if (quality && quality.warnings && quality.warnings.length > 0) {
-      allWarnings.push({
-        regime: elig.regime,
-        warnings: quality.warnings,
-        score: quality.quality_score
-      })
-    }
-  })
-
-  if (allWarnings.length === 0) {
-    return null
-  }
-
+  const toneClass = {
+    success: 'text-success',
+    destructive: 'text-destructive',
+    warning: 'text-warning',
+    primary: 'text-primary',
+  }[tone]
   return (
-    <div style={{
-      padding: '16px',
-      backgroundColor: '#fffbeb',
-      borderRadius: '8px',
-      border: '1px solid #fbbf24',
-      marginTop: '8px'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-        <AlertTriangle size={20} className="text-warning" />
-        <h3 className="text-warning" style={{ fontSize: '14px', fontWeight: '600', margin: 0 }}>
-          Data Quality Warnings ({allWarnings.reduce((sum, w) => sum + w.warnings.length, 0)})
-        </h3>
+    <div className="px-3 py-2">
+      <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        {label}
       </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '12px' }}>
-        {allWarnings.map((item) => (
-          <div key={item.regime} style={{ padding: '12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #fcd34d' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>{item.regime}</div>
-              <div className={item.score >= 70 ? 'bg-success/10 text-success' : item.score >= 40 ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-destructive'} style={{
-                fontSize: '11px',
-                padding: '3px 8px',
-                borderRadius: '4px',
-                fontWeight: '600'
-              }}>
-                {item.score}% Quality
-              </div>
-            </div>
-            <ul className="text-muted-foreground" style={{ margin: 0, paddingLeft: '20px', fontSize: '11px' }}>
-              {item.warnings.slice(0, 3).map((warning, idx) => (
-                <li key={idx} style={{ marginBottom: '4px' }}>{warning}</li>
-              ))}
-              {item.warnings.length > 3 && (
-                <li className="text-muted-foreground" style={{ fontStyle: 'italic' }}>
-                  +{item.warnings.length - 3} more warnings
-                </li>
-              )}
-            </ul>
-          </div>
-        ))}
+      <div className={cn('mt-0.5 text-lg font-semibold tabular-nums', toneClass)}>
+        {value}
       </div>
     </div>
   )
 }
 
-// Helper component for Regime Qualification Tab
-function RegimeQualificationTab({
-  eligibilities,
-  allRegimes,
-  clientId
-}: {
-  eligibilities: RegimeEligibility[],
-  allRegimes: string[],
-  clientId: number
-}) {
-  const [expandedRegimes, setExpandedRegimes] = useState<Record<string, { matched: boolean; unmatched: boolean }>>({})
-  const [rules, setRules] = useState<Record<string, any[]>>({})
+// -------------------------------------------------------------
+// Simulate External Trigger — button + progress modal
+// -------------------------------------------------------------
 
-  useEffect(() => {
-    // Initialize expanded state: matched expanded, unmatched collapsed
-    const initialExpanded: Record<string, { matched: boolean; unmatched: boolean }> = {}
-    eligibilities.forEach(elig => {
-      initialExpanded[elig.regime] = { matched: true, unmatched: false }
-    })
-    setExpandedRegimes(initialExpanded)
-  }, [eligibilities])
-
-  useEffect(() => {
-    // Fetch all rules for displaying rule configs
-    const fetchRules = async () => {
-      try {
-        const res = await fetch('http://localhost:8000/api/classification-rules')
-        const data = await res.json()
-
-        // Group rules by regime
-        const rulesByRegime: Record<string, any[]> = {}
-        data.forEach((rule: any) => {
-          if (!rulesByRegime[rule.regime]) {
-            rulesByRegime[rule.regime] = []
-          }
-          rulesByRegime[rule.regime].push(rule)
-        })
-        setRules(rulesByRegime)
-      } catch (err) {
-        console.error('Failed to fetch classification rules', err)
-      }
-    }
-    fetchRules()
-  }, [])
-
-  const toggleSection = (regime: string, section: 'matched' | 'unmatched') => {
-    setExpandedRegimes(prev => ({
-      ...prev,
-      [regime]: {
-        ...prev[regime],
-        [section]: !prev[regime]?.[section]
-      }
-    }))
-  }
-
-  const getRuleConfig = (ruleId: number) => {
-    for (const regimeRules of Object.values(rules)) {
-      const rule = regimeRules.find(r => r.id === ruleId)
-      if (rule) return rule
-    }
-    return null
-  }
-
-  return (
-    <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '28px', border: '1px solid #e5e7eb' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '22px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
-          Regime Qualification Summary
-        </h2>
-        <p style={{ fontSize: '14px', color: '#6b7280' }}>
-          Detailed breakdown of qualification rules for each regulatory regime
-        </p>
-      </div>
-
-      {eligibilities.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: '#6b7280' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎯</div>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>No regime qualifications yet</h3>
-          <p style={{ fontSize: '14px' }}>Run regime eligibility evaluation to see qualification details</p>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {eligibilities.map(elig => {
-            const isMatchedExpanded = expandedRegimes[elig.regime]?.matched ?? true
-            const isUnmatchedExpanded = expandedRegimes[elig.regime]?.unmatched ?? false
-
-            return (
-              <div
-                key={elig.id}
-                style={{
-                  border: '2px solid',
-                  borderColor: elig.is_eligible ? '#d1fae5' : '#e5e7eb',
-                  borderRadius: '12px',
-                  padding: '24px',
-                  backgroundColor: elig.is_eligible ? '#f0fdf4' : '#f9fafb'
-                }}
-              >
-                {/* Regime Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <div>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>
-                      {elig.regime}
-                    </h3>
-                    <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
-                      {elig.eligibility_reason}
-                    </p>
-                  </div>
-                  <span style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    backgroundColor: elig.is_eligible ? '#d1fae5' : '#f3f4f6',
-                    color: elig.is_eligible ? '#065f46' : '#6b7280'
-                  }}>
-                    {elig.is_eligible ? '✓ Eligible' : '✗ Not Eligible'}
-                  </span>
-                </div>
-
-                {/* Client Attributes Used for Evaluation */}
-                {elig.client_attributes && (
-                  <div className="mb-4 p-3 bg-muted/30 rounded-lg border border-border">
-                    <div className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
-                      <span>🔍</span>
-                      Evaluated Attributes (Snapshot)
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-[11px]">
-                      {elig.client_attributes.account_type && (
-                        <div>
-                          <span className="font-semibold text-muted-foreground">Account Type:</span>{' '}
-                          <span className="text-foreground bg-muted px-1.5 py-0.5 rounded">
-                            {elig.client_attributes.account_type}
-                          </span>
-                        </div>
-                      )}
-                      {elig.client_attributes.booking_location && (
-                        <div>
-                          <span className="font-semibold text-muted-foreground">Booking Location:</span>{' '}
-                          <span className="text-foreground bg-muted px-1.5 py-0.5 rounded">
-                            {elig.client_attributes.booking_location}
-                          </span>
-                        </div>
-                      )}
-                      {elig.client_attributes.product_grid?.product_group && (
-                        <div>
-                          <span className="font-semibold text-muted-foreground">Product Group:</span>{' '}
-                          <span className="text-foreground bg-muted px-1.5 py-0.5 rounded">
-                            {elig.client_attributes.product_grid.product_group}
-                          </span>
-                        </div>
-                      )}
-                      {elig.client_attributes.product_grid?.product_type && (
-                        <div>
-                          <span className="font-semibold text-muted-foreground">Product Type:</span>{' '}
-                          <span className="text-foreground bg-muted px-1.5 py-0.5 rounded">
-                            {elig.client_attributes.product_grid.product_type}
-                          </span>
-                        </div>
-                      )}
-                      {elig.client_attributes.product_grid?.product_status && (
-                        <div>
-                          <span className="font-semibold text-muted-foreground">Product Status:</span>{' '}
-                          <span className="text-foreground bg-muted px-1.5 py-0.5 rounded">
-                            {elig.client_attributes.product_grid.product_status}
-                          </span>
-                        </div>
-                      )}
-                      {elig.client_attributes.product_grid?.bank_entity && (
-                        <div>
-                          <span className="font-semibold text-muted-foreground">Bank Entity:</span>{' '}
-                          <span className="text-foreground bg-muted px-1.5 py-0.5 rounded">
-                            {elig.client_attributes.product_grid.bank_entity}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Matched Rules Section */}
-                {elig.matched_rules && elig.matched_rules.length > 0 && (
-                  <div style={{ marginBottom: '16px' }}>
-                    <button
-                      onClick={() => toggleSection(elig.regime, 'matched')}
-                      style={{
-                        width: '100%',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '12px 16px',
-                        backgroundColor: '#d1fae5',
-                        border: '1px solid #86efac',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      <span style={{ fontSize: '14px', fontWeight: '600', color: '#065f46' }}>
-                        ✅ Matched Rules ({elig.matched_rules.length})
-                      </span>
-                      <span style={{ fontSize: '18px', color: '#065f46' }}>
-                        {isMatchedExpanded ? '▼' : '▶'}
-                      </span>
-                    </button>
-
-                    {isMatchedExpanded && (
-                      <div style={{ marginTop: '12px', paddingLeft: '16px' }}>
-                        {elig.matched_rules.map((rule, idx) => {
-                          const ruleConfig = getRuleConfig(rule.rule_id)
-                          return (
-                            <div
-                              key={idx}
-                              style={{
-                                marginBottom: '12px',
-                                padding: '12px',
-                                backgroundColor: 'white',
-                                borderRadius: '6px',
-                                border: '1px solid #86efac'
-                              }}
-                            >
-                              <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>
-                                {rule.rule_name}
-                              </div>
-                              <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>
-                                Type: <span style={{ fontWeight: '600' }}>{rule.rule_type}</span>
-                              </div>
-                              {ruleConfig && ruleConfig.rule_config && (
-                                <div style={{
-                                  fontSize: '11px',
-                                  padding: '8px',
-                                  backgroundColor: '#f9fafb',
-                                  borderRadius: '4px',
-                                  fontFamily: 'monospace',
-                                  color: '#374151'
-                                }}>
-                                  {JSON.stringify(ruleConfig.rule_config, null, 2)}
-                                </div>
-                              )}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Unmatched Rules Section */}
-                {elig.unmatched_rules && elig.unmatched_rules.length > 0 && (
-                  <div>
-                    <button
-                      onClick={() => toggleSection(elig.regime, 'unmatched')}
-                      style={{
-                        width: '100%',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '12px 16px',
-                        backgroundColor: '#fee2e2',
-                        border: '1px solid #fca5a5',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      <span style={{ fontSize: '14px', fontWeight: '600', color: '#991b1b' }}>
-                        ❌ Unmatched Rules ({elig.unmatched_rules.length})
-                      </span>
-                      <span style={{ fontSize: '18px', color: '#991b1b' }}>
-                        {isUnmatchedExpanded ? '▼' : '▶'}
-                      </span>
-                    </button>
-
-                    {isUnmatchedExpanded && (
-                      <div style={{ marginTop: '12px', paddingLeft: '16px' }}>
-                        {elig.unmatched_rules.map((rule, idx) => {
-                          const ruleConfig = getRuleConfig(rule.rule_id)
-                          return (
-                            <div
-                              key={idx}
-                              style={{
-                                marginBottom: '12px',
-                                padding: '12px',
-                                backgroundColor: 'white',
-                                borderRadius: '6px',
-                                border: '1px solid #fca5a5'
-                              }}
-                            >
-                              <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>
-                                {rule.rule_name}
-                              </div>
-                              <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>
-                                Type: <span style={{ fontWeight: '600' }}>{rule.rule_type}</span>
-                              </div>
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                                <div style={{
-                                  fontSize: '11px',
-                                  padding: '6px 8px',
-                                  backgroundColor: '#fef3c7',
-                                  borderRadius: '4px',
-                                  border: '1px solid #fbbf24'
-                                }}>
-                                  <div style={{ fontWeight: '600', color: '#92400e', marginBottom: '2px' }}>Expected:</div>
-                                  <div style={{ fontFamily: 'monospace', color: '#78350f' }}>
-                                    {JSON.stringify(rule.expected)}
-                                  </div>
-                                </div>
-                                <div style={{
-                                  fontSize: '11px',
-                                  padding: '6px 8px',
-                                  backgroundColor: '#fee2e2',
-                                  borderRadius: '4px',
-                                  border: '1px solid #fca5a5'
-                                }}>
-                                  <div style={{ fontWeight: '600', color: '#991b1b', marginBottom: '2px' }}>Actual:</div>
-                                  <div style={{ fontFamily: 'monospace', color: '#7f1d1d' }}>
-                                    {JSON.stringify(rule.actual)}
-                                  </div>
-                                </div>
-                              </div>
-                              {ruleConfig && ruleConfig.rule_config && (
-                                <div style={{
-                                  fontSize: '11px',
-                                  padding: '8px',
-                                  backgroundColor: '#f9fafb',
-                                  borderRadius: '4px',
-                                  fontFamily: 'monospace',
-                                  color: '#374151'
-                                }}>
-                                  {JSON.stringify(ruleConfig.rule_config, null, 2)}
-                                </div>
-                              )}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Show message if no rules at all */}
-                {(!elig.matched_rules || elig.matched_rules.length === 0) &&
-                 (!elig.unmatched_rules || elig.unmatched_rules.length === 0) && (
-                  <div style={{ textAlign: 'center', padding: '20px', color: '#9ca3af', fontSize: '13px' }}>
-                    No rule evaluation data available for this regime
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Footer note with link to detailed rules page */}
-      <div style={{
-        marginTop: '24px',
-        padding: '16px',
-        backgroundColor: '#f9fafb',
-        borderRadius: '8px',
-        border: '1px solid #e5e7eb',
-        fontSize: '13px',
-        color: '#6b7280'
-      }}>
-        <p style={{ margin: 0 }}>
-          <strong>Note:</strong> This view shows rule evaluation results for this specific client.
-          To view and manage all classification rules across regimes, visit the{' '}
-          <a
-            href="/classification-rules"
-            style={{ color: '#2563eb', textDecoration: 'underline', fontWeight: '600' }}
-          >
-            Classification Rules Management
-          </a>{' '}
-          page.
-        </p>
-      </div>
-    </div>
-  )
-}
-
-// Simulate External Trigger Button Component
 function SimulateExternalTriggerButton({
   stages,
   clientId,
-  onTriggerComplete
+  onTriggerComplete,
 }: {
-  stages: OnboardingStage[],
-  clientId: number,
+  stages: OnboardingStage[]
+  clientId: number
   onTriggerComplete: () => void
 }) {
   const [isTriggering, setIsTriggering] = useState(false)
   const [showModal, setShowModal] = useState(false)
-  const [progress, setProgress] = useState<{ current: number; total: number; regime: string }>({ current: 0, total: 20, regime: '' })
+  const [progress, setProgress] = useState<{
+    current: number
+    total: number
+    regime: string
+  }>({ current: 0, total: 20, regime: '' })
 
-  // Check if button should be shown
-  const legalEntityStage = stages.find(s => s.stage_name === 'Legal Entity Setup')
-  const regClassificationStage = stages.find(s => s.stage_name === 'Regulatory Classification')
+  const legalEntity = stages.find((s) => s.stage_name === 'Legal Entity Setup')
+  const regClassification = stages.find(
+    (s) => s.stage_name === 'Regulatory Classification',
+  )
+  const shouldShow =
+    legalEntity?.status === 'completed' && regClassification?.status === 'not_started'
 
-  const shouldShowButton =
-    legalEntityStage?.status === 'completed' &&
-    regClassificationStage?.status === 'not_started'
-
-  if (!shouldShowButton) {
-    return null
-  }
+  if (!shouldShow) return null
 
   const handleTrigger = async () => {
     setIsTriggering(true)
     setShowModal(true)
-    setProgress({ current: 0, total: 20, regime: 'Initializing...' })
+    setProgress({ current: 0, total: 20, regime: 'Initializing…' })
 
     try {
-      // Fetch all regimes
       const regimesRes = await fetch('http://localhost:8000/api/regimes')
-      const allRegimes = await regimesRes.json()
+      const allRegimes: string[] = await regimesRes.json()
 
-      // Evaluate all regimes one by one
       for (let i = 0; i < allRegimes.length; i++) {
         const regime = allRegimes[i]
         setProgress({ current: i + 1, total: allRegimes.length, regime })
-
-        await fetch(`http://localhost:8000/api/clients/${clientId}/evaluate-eligibility?regime=${encodeURIComponent(regime)}`, {
-          method: 'POST'
-        })
-
-        // Small delay for visual feedback
-        await new Promise(resolve => setTimeout(resolve, 300))
+        await fetch(
+          `http://localhost:8000/api/clients/${clientId}/evaluate-eligibility?regime=${encodeURIComponent(regime)}`,
+          { method: 'POST' },
+        )
+        await new Promise((r) => setTimeout(r, 300))
       }
 
-      // Update the Regulatory Classification stage to IN_PROGRESS
-      const regStageRes = await fetch(`http://localhost:8000/api/clients/${clientId}/onboarding`)
-      const allStages = await regStageRes.json()
-      const regStage = allStages.find((s: OnboardingStage) => s.stage_name === 'Regulatory Classification')
-
+      const regStageRes = await fetch(
+        `http://localhost:8000/api/clients/${clientId}/onboarding`,
+      )
+      const allStages: OnboardingStage[] = await regStageRes.json()
+      const regStage = allStages.find(
+        (s) => s.stage_name === 'Regulatory Classification',
+      )
       if (regStage) {
         await fetch(`http://localhost:8000/api/onboarding/${regStage.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'in_progress' })
+          body: JSON.stringify({ status: 'in_progress' }),
         })
       }
 
-      setProgress({ current: allRegimes.length, total: allRegimes.length, regime: 'Complete!' })
-
-      // Wait a moment before closing
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
+      setProgress({ current: allRegimes.length, total: allRegimes.length, regime: 'Complete' })
+      await new Promise((r) => setTimeout(r, 800))
       setShowModal(false)
       onTriggerComplete()
     } catch (err) {
       console.error('Failed to trigger regime evaluation', err)
-      setProgress({ current: 0, total: 20, regime: 'Error occurred' })
+      setProgress((p) => ({ ...p, regime: 'Error occurred' }))
     } finally {
       setIsTriggering(false)
     }
   }
 
+  const pct = progress.total > 0 ? (progress.current / progress.total) * 100 : 0
+
   return (
     <>
-      <button
-        onClick={handleTrigger}
-        disabled={isTriggering}
-        style={{
-          padding: '10px 20px',
-          fontSize: '14px',
-          fontWeight: '600',
-          backgroundColor: isTriggering ? '#9ca3af' : '#2563eb',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: isTriggering ? 'not-allowed' : 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          transition: 'all 0.2s',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        }}
-        onMouseEnter={(e) => {
-          if (!isTriggering) {
-            e.currentTarget.style.backgroundColor = '#1d4ed8'
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!isTriggering) {
-            e.currentTarget.style.backgroundColor = '#2563eb'
-          }
-        }}
-      >
-        <RefreshCw size={16} style={{ animation: isTriggering ? 'spin 1s linear infinite' : 'none' }} />
-        Simulate External Trigger
-      </button>
+      <Button onClick={handleTrigger} disabled={isTriggering} size="sm">
+        <RefreshCw className={cn('h-4 w-4', isTriggering && 'animate-spin')} />
+        Simulate external trigger
+      </Button>
 
-      {/* Progress Modal */}
       {showModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            padding: '32px',
-            maxWidth: '500px',
-            width: '90%',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
-          }}>
-            <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#111827', marginBottom: '16px', textAlign: 'center' }}>
-              Evaluating Regime Eligibility
-            </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <Card className="w-[min(92vw,480px)] p-6 shadow-lg">
+            <div className="mb-1 text-base font-semibold">
+              Evaluating regime eligibility
+            </div>
+            <p className="mb-4 text-xs text-muted-foreground">
+              Running classification rules across all configured regimes.
+            </p>
 
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '14px', color: '#6b7280' }}>Progress</span>
-                <span style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+            <div className="mb-4">
+              <div className="mb-2 flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Progress</span>
+                <span className="font-mono font-medium text-foreground">
                   {progress.current} / {progress.total}
                 </span>
               </div>
-
-              {/* Progress Bar */}
-              <div style={{
-                width: '100%',
-                height: '12px',
-                backgroundColor: '#e5e7eb',
-                borderRadius: '6px',
-                overflow: 'hidden'
-              }}>
-                <div style={{
-                  width: `${(progress.current / progress.total) * 100}%`,
-                  height: '100%',
-                  backgroundColor: '#10b981',
-                  transition: 'width 0.3s ease',
-                  borderRadius: '6px'
-                }} />
+              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${pct}%` }}
+                />
               </div>
             </div>
 
-            <div style={{
-              padding: '16px',
-              backgroundColor: '#f9fafb',
-              borderRadius: '8px',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '4px' }}>
+            <div className="rounded-md border border-border bg-muted/40 px-3 py-2">
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 Currently evaluating
               </div>
-              <div style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>
-                {progress.regime}
+              <div className="text-sm font-medium text-foreground">
+                {progress.regime || '—'}
               </div>
             </div>
 
-            {progress.current === progress.total && (
-              <div style={{
-                marginTop: '16px',
-                padding: '12px',
-                backgroundColor: '#d1fae5',
-                borderRadius: '8px',
-                textAlign: 'center',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#065f46'
-              }}>
-                ✓ All regimes evaluated successfully!
-              </div>
+            {progress.current === progress.total && progress.current > 0 && (
+              <Alert variant="success" className="mt-4">
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertTitle>All regimes evaluated</AlertTitle>
+              </Alert>
             )}
-          </div>
+          </Card>
         </div>
       )}
     </>
   )
 }
 
+// -------------------------------------------------------------
+// Stage cell (Overview timeline)
+// -------------------------------------------------------------
+
+function StageCell({
+  stage,
+  name,
+}: {
+  stage: OnboardingStage | undefined
+  name: string
+}) {
+  const status = stage?.status ?? 'not_started'
+  const active = status === 'in_progress'
+  const overdue = stage?.is_overdue ?? false
+
+  let dotCls = 'border border-border bg-muted text-muted-foreground'
+  let Icon: LucideIcon | null = null
+  if (status === 'completed') {
+    dotCls = 'bg-success text-success-foreground'
+    Icon = Check
+  } else if (status === 'blocked') {
+    dotCls = 'bg-destructive text-destructive-foreground'
+    Icon = Ban
+  } else if (active) {
+    dotCls = overdue
+      ? 'bg-destructive/10 text-destructive ring-4 ring-destructive/15'
+      : 'bg-primary/10 text-primary ring-4 ring-primary/15'
+  }
+
+  return (
+    <div className="flex flex-col items-center text-center">
+      <div
+        className={cn(
+          'z-10 flex h-9 w-9 items-center justify-center rounded-full transition-colors',
+          dotCls,
+        )}
+      >
+        {Icon ? (
+          <Icon className="h-4 w-4" />
+        ) : active ? (
+          <span className="h-2 w-2 rounded-full bg-primary" />
+        ) : null}
+      </div>
+      <div
+        className={cn(
+          'mt-3 text-xs font-medium leading-tight',
+          status === 'not_started' ? 'text-muted-foreground' : 'text-foreground',
+        )}
+      >
+        {name}
+      </div>
+      {stage?.tat_days !== null && stage?.tat_days !== undefined && (
+        <Badge
+          variant={overdue ? 'subtle-destructive' : 'subtle-success'}
+          className="mt-2"
+        >
+          {stage.tat_days}d
+        </Badge>
+      )}
+      {stage?.target_tat_hours != null && (
+        <div className="mt-1 text-[10px] text-muted-foreground">
+          Target {(stage.target_tat_hours / 24).toFixed(1)}d
+        </div>
+      )}
+      {stage?.assigned_team && (
+        <div className="mt-1 text-[11px] text-muted-foreground">
+          {stage.assigned_team}
+        </div>
+      )}
+      {stage?.notes && (
+        <div className="mt-1 text-[10px] italic text-destructive">{stage.notes}</div>
+      )}
+    </div>
+  )
+}
+
+// -------------------------------------------------------------
+// Main component
+// -------------------------------------------------------------
+
 export default function ClientDetail() {
   const { clientId } = useParams<{ clientId: string }>()
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState<TabType>('overview')
+
+  const [activeTab, setActiveTab] = useState<TabId>('overview')
   const [client, setClient] = useState<Client | null>(null)
   const [stages, setStages] = useState<OnboardingStage[]>([])
   const [classifications, setClassifications] = useState<RegulatoryClassification[]>([])
@@ -803,76 +457,69 @@ export default function ClientDetail() {
   const [error, setError] = useState<string | null>(null)
   const [isLegacyExpanded, setIsLegacyExpanded] = useState(false)
 
-  // Client Central sync state
   const [cxSyncStatus, setCxSyncStatus] = useState<any>(null)
   const [publishingToCX, setPublishingToCX] = useState(false)
-
-  // Document requirements state (for validation summary)
   const [documentRequirements, setDocumentRequirements] = useState<any>(null)
-  const [loadingDocRequirements, setLoadingDocRequirements] = useState(false)
 
   useEffect(() => {
-    const fetchClientData = async () => {
+    if (!clientId) return
+    const load = async () => {
       try {
         setLoading(true)
 
-        // Fetch regimes
         const regimesRes = await fetch('http://localhost:8000/api/regimes')
-        const regimesData = await regimesRes.json()
-        setRegimes(regimesData)
+        setRegimes(await regimesRes.json())
 
-        // Fetch client data
-        const [clientData, stagesData, classificationsData, riskScoreData] = await Promise.all([
-          clientsApi.getById(Number(clientId)),
-          onboardingApi.getStages(Number(clientId)),
-          regulatoryApi.getClassifications(Number(clientId)),
-          clientsApi.getRiskScore(Number(clientId))
-        ])
+        const [clientData, stagesData, classificationsData, riskScoreData] =
+          await Promise.all([
+            clientsApi.getById(Number(clientId)),
+            onboardingApi.getStages(Number(clientId)),
+            regulatoryApi.getClassifications(Number(clientId)),
+            clientsApi.getRiskScore(Number(clientId)),
+          ])
         setClient(clientData)
         setStages(stagesData)
         setClassifications(classificationsData)
         setRiskScore(riskScoreData)
 
-        // Fetch eligibilities
-        const eligRes = await fetch(`http://localhost:8000/api/clients/${clientId}/regime-eligibility`)
-        const eligData = await eligRes.json()
+        const eligRes = await fetch(
+          `http://localhost:8000/api/clients/${clientId}/regime-eligibility`,
+        )
+        const eligData: RegimeEligibility[] = await eligRes.json()
         setEligibilities(eligData)
 
-        // Fetch data quality for each regime
         const qualityMap: Record<string, DataQualityResult> = {}
         for (const elig of eligData) {
           try {
-            const qualityRes = await fetch(`http://localhost:8000/api/clients/${clientId}/data-quality?regime=${elig.regime}`)
-            const qualityData = await qualityRes.json()
-            qualityMap[`${clientId}_${elig.regime}`] = qualityData
+            const qualityRes = await fetch(
+              `http://localhost:8000/api/clients/${clientId}/data-quality?regime=${elig.regime}`,
+            )
+            qualityMap[`${clientId}_${elig.regime}`] = await qualityRes.json()
           } catch (err) {
-            console.error(`Failed to fetch data quality for regime ${elig.regime}`, err)
+            console.error(`Failed to fetch data quality for ${elig.regime}`, err)
           }
         }
         setDataQuality(qualityMap)
-
       } catch (err: any) {
         setError(err.message)
       } finally {
         setLoading(false)
       }
     }
-
-    if (clientId) {
-      fetchClientData()
-    }
+    load()
   }, [clientId])
 
   const handleEvaluateRegime = async (regime: string) => {
+    setEvaluating(regime)
     try {
-      setEvaluating(regime)
-      await fetch(`http://localhost:8000/api/clients/${clientId}/evaluate-eligibility?regime=${regime}`, {
-        method: 'POST'
-      })
-      // Refresh eligibility data
-      const eligRes = await fetch(`http://localhost:8000/api/clients/${clientId}/regime-eligibility`)
-      const eligData = await eligRes.json()
-      setEligibilities(eligData)
+      await fetch(
+        `http://localhost:8000/api/clients/${clientId}/evaluate-eligibility?regime=${regime}`,
+        { method: 'POST' },
+      )
+      const eligRes = await fetch(
+        `http://localhost:8000/api/clients/${clientId}/regime-eligibility`,
+      )
+      setEligibilities(await eligRes.json())
     } catch (err) {
       console.error('Failed to evaluate regime', err)
     } finally {
@@ -882,34 +529,33 @@ export default function ClientDetail() {
 
   const handleSimulateCXApproval = async () => {
     if (!client) return
-
     setLoading(true)
     try {
       const response = await fetch(
         `http://localhost:8000/api/clients/${client.id}/simulate-cx-approval`,
-        { method: 'POST' }
+        { method: 'POST' },
       )
       const result = await response.json()
-
-      // Show success notification
-      alert(`Client Central Product Approval Simulated!\n\n` +
-            `Product Approved: ${result.product_approved}\n` +
-            `Regimes Evaluated: ${result.regimes_evaluated}\n` +
-            `Eligible Regimes: ${result.eligible_regimes.length}`)
-
-      // Refresh all client data
+      alert(
+        `Client Central Product Approval Simulated!\n\n` +
+          `Product Approved: ${result.product_approved}\n` +
+          `Regimes Evaluated: ${result.regimes_evaluated}\n` +
+          `Eligible Regimes: ${result.eligible_regimes.length}`,
+      )
       if (clientId) {
         const [clientData, stagesData, eligData] = await Promise.all([
           clientsApi.getById(Number(clientId)),
           onboardingApi.getStages(Number(clientId)),
-          fetch(`http://localhost:8000/api/clients/${clientId}/regime-eligibility`).then(r => r.json())
+          fetch(`http://localhost:8000/api/clients/${clientId}/regime-eligibility`).then(
+            (r) => r.json(),
+          ),
         ])
         setClient(clientData)
         setStages(stagesData)
         setEligibilities(eligData)
       }
-    } catch (error) {
-      console.error('Failed to simulate Client Central approval:', error)
+    } catch (err) {
+      console.error('Failed to simulate Client Central approval:', err)
       alert('Failed to simulate Client Central product approval')
     } finally {
       setLoading(false)
@@ -919,11 +565,10 @@ export default function ClientDetail() {
   const fetchCXSyncStatus = async () => {
     if (!clientId) return
     try {
-      const response = await fetch(`http://localhost:8000/api/clients/${clientId}/cx-sync-status`)
-      const data = await response.json()
-      setCxSyncStatus(data)
-    } catch (error) {
-      console.error('Failed to fetch Client Central sync status:', error)
+      const r = await fetch(`http://localhost:8000/api/clients/${clientId}/cx-sync-status`)
+      setCxSyncStatus(await r.json())
+    } catch (err) {
+      console.error('Failed to fetch Client Central sync status:', err)
     }
   }
 
@@ -931,20 +576,20 @@ export default function ClientDetail() {
     if (!clientId) return
     setPublishingToCX(true)
     try {
-      const response = await fetch(`http://localhost:8000/api/clients/${clientId}/publish-classification-to-cx`, {
-        method: 'POST'
-      })
-      const result = await response.json()
-
-      alert(`Classification Published to Client Central Successfully!\n\n` +
-            `Client Central Reference ID: ${result.cx_reference_id}\n` +
-            `Regimes Published: ${result.regimes_published}\n` +
-            `Data Quality Warnings: ${result.data_quality_warnings.length}`)
-
-      // Refresh Client Central sync status
+      const r = await fetch(
+        `http://localhost:8000/api/clients/${clientId}/publish-classification-to-cx`,
+        { method: 'POST' },
+      )
+      const result = await r.json()
+      alert(
+        `Classification Published to Client Central Successfully!\n\n` +
+          `Client Central Reference ID: ${result.cx_reference_id}\n` +
+          `Regimes Published: ${result.regimes_published}\n` +
+          `Data Quality Warnings: ${result.data_quality_warnings.length}`,
+      )
       await fetchCXSyncStatus()
-    } catch (error) {
-      console.error('Failed to publish to Client Central:', error)
+    } catch (err) {
+      console.error('Failed to publish to Client Central:', err)
       alert('Failed to publish classification to Client Central')
     } finally {
       setPublishingToCX(false)
@@ -953,1506 +598,1117 @@ export default function ClientDetail() {
 
   const fetchDocumentRequirements = async () => {
     if (!clientId) return
-    setLoadingDocRequirements(true)
     try {
-      const response = await fetch(`http://localhost:8000/api/clients/${clientId}/document-requirements`)
-      const data = await response.json()
-      setDocumentRequirements(data)
-    } catch (error) {
-      console.error('Failed to fetch document requirements:', error)
-    } finally {
-      setLoadingDocRequirements(false)
+      const r = await fetch(
+        `http://localhost:8000/api/clients/${clientId}/document-requirements`,
+      )
+      setDocumentRequirements(await r.json())
+    } catch (err) {
+      console.error('Failed to fetch document requirements:', err)
     }
   }
 
-  // Fetch Client Central sync status when regulatory tab is opened
   useEffect(() => {
-    if (activeTab === 'regulatory' && clientId) {
+    if ((activeTab === 'regulatory' || activeTab === 'documents') && clientId) {
       fetchCXSyncStatus()
       fetchDocumentRequirements()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, clientId])
 
-  // Fetch document requirements when documents tab is opened
-  useEffect(() => {
-    if (activeTab === 'documents' && clientId) {
-      fetchDocumentRequirements()
-    }
-  }, [activeTab, clientId])
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return { bg: '#d1fae5', text: '#065f46' }
-      case 'blocked': return { bg: '#fee2e2', text: '#991b1b' }
-      case 'in_progress': return { bg: '#dbeafe', text: '#1e40af' }
-      default: return { bg: '#f3f4f6', text: '#374151' }
-    }
-  }
-
-  const getStageStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return '#10b981'
-      case 'in_progress': return '#3b82f6'
-      case 'blocked': return '#ef4444'
-      default: return '#d1d5db'
-    }
-  }
-
-  const getEligibilityBadge = (isEligible: boolean) => {
-    if (isEligible) {
-      return (
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '6px 14px',
-          backgroundColor: '#d1fae5',
-          color: '#065f46',
-          borderRadius: '8px',
-          fontSize: '13px',
-          fontWeight: '600'
-        }}>
-          <CheckCircle2 size={16} />
-          Eligible
-        </div>
-      )
-    } else {
-      return (
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '6px 14px',
-          backgroundColor: '#fee2e2',
-          color: '#991b1b',
-          borderRadius: '8px',
-          fontSize: '13px',
-          fontWeight: '600'
-        }}>
-          <XCircle size={16} />
-          Not Eligible
-        </div>
-      )
-    }
-  }
-
-  const getQualityScoreBadge = (score: number) => {
-    let bgColor = '#fee2e2'
-    let textColor = '#991b1b'
-    let icon = <AlertCircle size={16} />
-
-    if (score >= 80) {
-      bgColor = '#d1fae5'
-      textColor = '#065f46'
-      icon = <CheckCircle2 size={16} />
-    } else if (score >= 50) {
-      bgColor = '#fef3c7'
-      textColor = '#92400e'
-      icon = <AlertTriangle size={16} />
-    }
-
-    return (
-      <div style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '6px 14px',
-        backgroundColor: bgColor,
-        color: textColor,
-        borderRadius: '8px',
-        fontSize: '13px',
-        fontWeight: '600'
-      }}>
-        {icon}
-        {score.toFixed(0)}% Complete
-      </div>
-    )
-  }
-
-  if (loading) {
-    return (
-      <div style={{ padding: '40px', textAlign: 'center' }}>
-        <h2>Loading client details...</h2>
-      </div>
-    )
-  }
-
-  if (error || !client) {
-    return (
-      <div style={{ padding: '40px', textAlign: 'center', color: 'red' }}>
-        <h2>Error: {error || 'Client not found'}</h2>
-        <button
-          onClick={() => navigate('/')}
-          style={{
-            marginTop: '20px',
-            padding: '10px 20px',
-            backgroundColor: '#3b82f6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer'
-          }}
-        >
-          Back to Dashboard
-        </button>
-      </div>
-    )
-  }
-
-  const statusColors = getStatusColor(client.onboarding_status)
-
-  // Calculate tab badges
-  const getTabBadge = (tabId: TabType): string | null => {
+  const getTabBadge = (tabId: TabId): string | null => {
     switch (tabId) {
       case 'regulatory': {
         const totalItems = eligibilities.length + classifications.length
         if (totalItems === 0) return null
-        const eligibleCount = eligibilities.filter(e => e.is_eligible).length
-        const legacyCount = classifications.length
-        return `${eligibleCount + legacyCount}`
+        const eligibleCount = eligibilities.filter((e) => e.is_eligible).length
+        return String(eligibleCount + classifications.length)
       }
       case 'documents': {
-        // Calculate missing mandatory documents from data quality
         let missingCount = 0
-        Object.values(dataQuality).forEach(quality => {
-          if (quality.missing_evidences) {
-            missingCount += quality.missing_evidences.length
-          }
+        Object.values(dataQuality).forEach((q) => {
+          if (q.missing_evidences) missingCount += q.missing_evidences.length
         })
         return missingCount > 0 ? `${missingCount} missing` : null
-      }
-      case 'tasks': {
-        // Would need task data - placeholder for now
-        return null
       }
       default:
         return null
     }
   }
 
-  const tabs: { id: TabType; label: string; icon: JSX.Element; badge?: string | null }[] = [
-    { id: 'overview', label: 'Overview', icon: <LayoutDashboard size={20} /> },
-    { id: 'regulatory', label: 'Regulatory Due Diligence', icon: <FileCheck size={20} /> },
-    { id: 'documents', label: 'Document Requirements', icon: <FileText size={20} /> },
-    { id: 'tasks', label: 'Tasks', icon: <ListTodo size={20} /> }
-  ]
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center text-sm text-muted-foreground">
+        Loading client details…
+      </div>
+    )
+  }
+
+  if (error || !client) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center gap-4 p-6 text-center">
+        <div className="text-sm text-destructive">
+          Error: {error || 'Client not found'}
+        </div>
+        <Button variant="outline" onClick={() => navigate('/')}>
+          <ArrowLeft className="h-4 w-4" />
+          Back to dashboard
+        </Button>
+      </div>
+    )
+  }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6' }}>
-      {/* Header */}
-      <header style={{ borderBottom: '1px solid #e5e7eb', backgroundColor: 'white', padding: '24px 40px' }}>
-        <div style={{ marginBottom: '16px' }}>
-          <button
-            onClick={() => navigate('/')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 12px',
-              backgroundColor: 'transparent',
-              border: '1px solid #e5e7eb',
-              borderRadius: '6px',
-              color: '#6b7280',
-              fontSize: '13px',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f9fafb'
-              e.currentTarget.style.borderColor = '#3b82f6'
-              e.currentTarget.style.color = '#3b82f6'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent'
-              e.currentTarget.style.borderColor = '#e5e7eb'
-              e.currentTarget.style.color = '#6b7280'
-            }}
-          >
-            <ArrowLeft size={16} />
-            Back to Dashboard
-          </button>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#111827', margin: 0 }}>
-            {client.name}
-          </h1>
-          <span style={{
-            padding: '6px 16px',
-            borderRadius: '12px',
-            fontSize: '13px',
-            fontWeight: '600',
-            backgroundColor: statusColors.bg,
-            color: statusColors.text,
-          }}>
-            {client.onboarding_status.replace('_', ' ').toUpperCase()}
-          </span>
-          {riskScore && <RiskBadge riskScore={riskScore} size="medium" />}
-        </div>
-        {riskScore && riskScore.risk_factors.length > 0 && (
-          <div style={{
-            marginBottom: '16px',
-            padding: '12px 16px',
-            backgroundColor: `${riskScore.risk_color}10`,
-            border: `1px solid ${riskScore.risk_color}30`,
-            borderRadius: '8px',
-            fontSize: '13px',
-            color: '#374151'
-          }}>
-            <strong style={{ color: riskScore.risk_color }}>Risk Factors:</strong> {riskScore.risk_factors.join(', ')}
-          </div>
-        )}
-        <div style={{ display: 'flex', gap: '32px', fontSize: '14px', color: '#6b7280', flexWrap: 'wrap' }}>
-          <span><strong style={{ color: '#374151' }}>Entity ID:</strong> {client.legal_entity_id}</span>
-          <span><strong style={{ color: '#374151' }}>Country of Incorporation:</strong> {client.country_of_incorporation}</span>
-          <span><strong style={{ color: '#374151' }}>Entity Type:</strong> {client.entity_type}</span>
-          <span><strong style={{ color: '#374151' }}>RM:</strong> {client.assigned_rm}</span>
-        </div>
+    <div className="mx-auto w-full max-w-[1400px] px-6 py-6 lg:px-8">
+      <div className="mb-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/')}
+          className="-ml-2 text-muted-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to dashboard
+        </Button>
+      </div>
 
-        {/* Key Classification Attributes - Prominent Display */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '16px',
-          marginTop: '20px',
-          padding: '16px',
-          backgroundColor: '#f9fafb',
-          borderRadius: '8px',
-          border: '1px solid #e5e7eb'
-        }}>
-          <div>
-            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px', fontWeight: '500' }}>
-              Product
-            </div>
-            <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
-              {client.client_attributes?.product || 'Not specified'}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px', fontWeight: '500' }}>
-              Booking Location
-            </div>
-            <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
-              {client.client_attributes?.booking_location || 'Not specified'}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px', fontWeight: '500' }}>
-              Country of Incorporation
-            </div>
-            <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
-              {client.country_of_incorporation || 'Not specified'}
-            </div>
-          </div>
-        </div>
-      </header>
+      <ClientHeader client={client} riskScore={riskScore} />
 
-      {/* Tabs Navigation */}
-      <div style={{ backgroundColor: 'white', borderBottom: '2px solid #e5e7eb' }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 40px' }}>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            {tabs.map((tab) => {
-              const badge = getTabBadge(tab.id)
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '16px 24px',
-                    border: 'none',
-                    backgroundColor: 'transparent',
-                    color: activeTab === tab.id ? '#3b82f6' : '#6b7280',
-                    fontSize: '14px',
-                    fontWeight: activeTab === tab.id ? '600' : '500',
-                    cursor: 'pointer',
-                    borderBottom: activeTab === tab.id ? '3px solid #3b82f6' : '3px solid transparent',
-                    transition: 'all 0.2s',
-                    position: 'relative',
-                    top: '2px'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (activeTab !== tab.id) {
-                      e.currentTarget.style.color = '#374151'
-                      e.currentTarget.style.backgroundColor = '#f9fafb'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (activeTab !== tab.id) {
-                      e.currentTarget.style.color = '#6b7280'
-                      e.currentTarget.style.backgroundColor = 'transparent'
-                    }
-                  }}
-                >
-                  {tab.icon}
-                  {tab.label}
-                  {badge && (
-                    <span style={{
-                      fontSize: '11px',
-                      fontWeight: '600',
-                      padding: '2px 8px',
-                      borderRadius: '12px',
-                      backgroundColor: activeTab === tab.id ? '#dbeafe' : '#f3f4f6',
-                      color: activeTab === tab.id ? '#1e40af' : '#6b7280',
-                      marginLeft: '4px'
-                    }}>
-                      {badge}
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
+      <div className="border-b border-border">
+        <div className="-mb-px flex flex-wrap">
+          {TABS.map((tab) => {
+            const Icon = tab.icon
+            const active = activeTab === tab.id
+            const badge = getTabBadge(tab.id)
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  'flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors',
+                  active
+                    ? 'border-primary text-foreground'
+                    : 'border-transparent text-muted-foreground hover:text-foreground',
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {tab.label}
+                {badge && (
+                  <Badge variant={active ? 'subtle-primary' : 'subtle-default'}>
+                    {badge}
+                  </Badge>
+                )}
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      {/* Tab Content */}
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 40px' }}>
-        {/* Overview Tab */}
+      <div className="pt-6">
         {activeTab === 'overview' && (
-          <div>
-            {/* Onboarding Progress Section */}
-            <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '28px', marginBottom: '24px', border: '1px solid #e5e7eb' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#111827', margin: 0 }}>
-                  Onboarding Progress
-                </h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  {client?.cumulative_tat_days && (
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '4px' }}>
-                        Cumulative TAT
-                      </div>
-                      <div style={{ fontSize: '24px', fontWeight: '700', color: '#059669' }}>
-                        {client.cumulative_tat_days} days
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#9ca3af' }}>
-                        ({client.cumulative_tat_hours?.toFixed(1)} hours)
-                      </div>
-                    </div>
-                  )}
-                  <SimulateExternalTriggerButton
-                    stages={stages}
-                    clientId={Number(clientId)}
-                    onTriggerComplete={() => {
-                      // Refresh client data
-                      if (clientId) {
-                        Promise.all([
-                          onboardingApi.getStages(Number(clientId)),
-                          fetch(`http://localhost:8000/api/clients/${clientId}/regime-eligibility`).then(r => r.json())
-                        ]).then(([stagesData, eligData]) => {
-                          setStages(stagesData)
-                          setEligibilities(eligData)
-                        })
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ position: 'relative' }}>
-                {/* Progress Line */}
-                <div style={{
-                  position: 'absolute',
-                  top: '20px',
-                  left: '20px',
-                  right: '20px',
-                  height: '3px',
-                  backgroundColor: '#e5e7eb',
-                  zIndex: 0,
-                }} />
-
-                {/* Stages */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px', position: 'relative', zIndex: 1 }}>
-                  {STAGES.map((stageName) => {
-                    const stage = stages.find(s => s.stage_name === stageName)
-                    const status = stage?.status || 'not_started'
-                    const color = getStageStatusColor(status)
-                    const isActive = status === 'in_progress'
-                    const isOverdue = stage?.is_overdue || false
-
-                    return (
-                      <div key={stageName} style={{ textAlign: 'center' }}>
-                        {/* Stage Circle */}
-                        <div style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '50%',
-                          backgroundColor: color,
-                          margin: '0 auto 12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          border: isActive ? '4px solid #dbeafe' : isOverdue ? '3px solid #fca5a5' : 'none',
-                          boxShadow: isActive ? '0 0 0 6px rgba(59, 130, 246, 0.1)' : isOverdue ? '0 0 0 4px rgba(239, 68, 68, 0.1)' : 'none',
-                        }}>
-                          {status === 'completed' && (
-                            <span style={{ color: 'white', fontSize: '18px' }}>✓</span>
-                          )}
-                          {status === 'in_progress' && (
-                            <span style={{ color: 'white', fontSize: '20px' }}>⟳</span>
-                          )}
-                          {status === 'blocked' && (
-                            <span style={{ color: 'white', fontSize: '18px' }}>!</span>
-                          )}
-                        </div>
-
-                        {/* Stage Name */}
-                        <div style={{
-                          fontSize: '12px',
-                          color: status === 'not_started' ? '#9ca3af' : '#374151',
-                          fontWeight: isActive ? '600' : '500',
-                          lineHeight: '1.4',
-                          marginBottom: '8px'
-                        }}>
-                          {stageName}
-                        </div>
-
-                        {/* TAT Display */}
-                        {stage && stage.tat_days !== null && stage.tat_days !== undefined && (
-                          <div style={{
-                            fontSize: '13px',
-                            fontWeight: '600',
-                            color: isOverdue ? '#dc2626' : '#059669',
-                            marginBottom: '4px',
-                            backgroundColor: isOverdue ? '#fee2e2' : '#d1fae5',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            display: 'inline-block',
-                          }}>
-                            {stage.tat_days} days
-                          </div>
-                        )}
-
-                        {/* Target TAT */}
-                        {stage && stage.target_tat_hours && (
-                          <div style={{ fontSize: '10px', color: '#9ca3af', marginBottom: '6px' }}>
-                            Target: {(stage.target_tat_hours / 24).toFixed(1)}d
-                          </div>
-                        )}
-
-                        {/* Stage Details */}
-                        {stage && (
-                          <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '6px' }}>
-                            {stage.assigned_team && <div style={{ fontWeight: '500' }}>{stage.assigned_team}</div>}
-                            {stage.notes && (
-                              <div style={{ marginTop: '4px', fontStyle: 'italic', color: '#ef4444', fontSize: '10px' }}>
-                                {stage.notes}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Material Changes Banner - Show if client has country change or other material changes */}
-              {client && client.client_attributes?.country_change_date && (
-                <div style={{
-                  marginTop: '24px',
-                  padding: '20px',
-                  backgroundColor: '#fffbeb',
-                  borderRadius: '8px',
-                  border: '2px solid #fbbf24'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
-                    <div style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '8px',
-                      backgroundColor: '#fef3c7',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '20px'
-                    }}>
-                      ⚠️
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '16px', fontWeight: '600', color: '#92400e', marginBottom: '8px' }}>
-                        Material Change Detected
-                      </div>
-                      <div style={{ fontSize: '13px', color: '#92400e', marginBottom: '12px', lineHeight: '1.6' }}>
-                        <strong>Country of Incorporation Changed:</strong> {client.client_attributes.previous_country_of_incorporation} → {client.country_of_incorporation}
-                        <br />
-                        <strong>Change Date:</strong> {new Date(client.client_attributes.country_change_date).toLocaleDateString()}
-                        <br />
-                        <strong>Reason:</strong> {client.client_attributes.change_reason || 'Not specified'}
-                        <br />
-                        <strong>Impact:</strong> Periodic review triggered - Classification needs re-evaluation for new jurisdiction-specific regimes
-                      </div>
-                      <div style={{
-                        padding: '10px 14px',
-                        backgroundColor: '#fef3c7',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        color: '#78350f',
-                        border: '1px solid #fbbf24'
-                      }}>
-                        💡 <strong>Demo Note:</strong> This demonstrates how the system automatically detects material changes in client circumstances (country relocation, entity type changes, etc.) and triggers periodic review workflows. The classification engine was automatically re-run to evaluate new jurisdiction-specific regimes.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Client Central Product Approval Button - Show if Legal Entity Setup is in progress */}
-              {client && client.onboarding_status === 'in_progress' &&
-               stages.some(s => s.stage_name === 'Legal Entity Setup' && s.status === 'in_progress') && (
-                <div style={{
-                  marginTop: '24px',
-                  padding: '20px',
-                  backgroundColor: '#eff6ff',
-                  borderRadius: '8px',
-                  border: '1px solid #3b82f6'
-                }}>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e40af', marginBottom: '8px' }}>
-                    Client Central Product Approval Required
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#1e40af', marginBottom: '12px' }}>
-                    Simulate product approval from Client Central to trigger regulatory classification across {regimes.length}+ regimes
-                  </div>
-                  <button
-                    onClick={handleSimulateCXApproval}
-                    disabled={loading}
-                    style={{
-                      padding: '10px 20px',
-                      backgroundColor: '#3b82f6',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      opacity: loading ? 0.6 : 1,
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!loading) e.currentTarget.style.backgroundColor = '#2563eb'
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!loading) e.currentTarget.style.backgroundColor = '#3b82f6'
-                    }}
-                  >
-                    {loading ? 'Processing...' : '▶ Simulate Client Central Product Approval'}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Regulatory Overview Section - Two Lanes */}
-            <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '28px', marginBottom: '24px', border: '1px solid #e5e7eb' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '24px' }}>
-                {/* Lane 1: Regulatory Classifications */}
-                <div>
-                  <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '20px' }}>⚖️</span>
-                    Regulatory Classifications
-                  </h2>
-
-                  {classifications.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '32px', color: '#6b7280', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px dashed #d1d5db' }}>
-                      <div style={{ fontSize: '14px', marginBottom: '8px' }}>No manual classifications</div>
-                      {eligibilities.length > 0 && (
-                        <div style={{ fontSize: '12px', color: '#059669', marginTop: '8px' }}>
-                          ✓ {eligibilities.filter(e => e.is_eligible).length} regime{eligibilities.filter(e => e.is_eligible).length !== 1 ? 's' : ''} evaluated via rule engine (see below)
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {classifications.map((classification) => (
-                        <RegulatoryClassificationCard
-                          key={classification.id}
-                          classification={classification}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Show assessed regimes info */}
-                  {eligibilities.length > 0 && (
-                    <div style={{ marginTop: '16px', padding: '14px', backgroundColor: '#eff6ff', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
-                      <div style={{ fontSize: '12px', color: '#1e40af', marginBottom: '8px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>🎯</span>
-                        Regime Assessment Summary
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#1e40af', lineHeight: '1.6' }}>
-                        <div style={{ marginBottom: '4px' }}>
-                          • <strong>Evaluated:</strong> {eligibilities.length} of {regimes.length} regulatory regimes
-                        </div>
-                        <div style={{ marginBottom: '4px' }}>
-                          • <strong>Eligible:</strong> {eligibilities.filter(e => e.is_eligible).length} regime{eligibilities.filter(e => e.is_eligible).length !== 1 ? 's' : ''}
-                        </div>
-                        <div style={{ marginBottom: '4px' }}>
-                          • <strong>Legacy Classifications:</strong> {classifications.length} framework{classifications.length !== 1 ? 's' : ''}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '8px', fontStyle: 'italic', borderTop: '1px solid #bfdbfe', paddingTop: '8px' }}>
-                        All {regimes.length} regimes are assessed. Only applicable regimes result in classifications.
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Lane 2: Documentation Requirements */}
-                <div>
-                  <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '20px' }}>📋</span>
-                    Documentation Requirements
-                  </h2>
-
-                  <DocumentRequirementsLane clientId={clientId} />
-                </div>
-              </div>
-
-              {/* Data Quality Warnings Summary (Overview Only) */}
-              {(() => {
-                // Calculate total warnings across all regimes
-                let totalWarnings = 0
-                let criticalWarnings = 0
-                let regimesWithWarnings = 0
-
-                eligibilities.forEach((elig) => {
-                  const quality = dataQuality[`${clientId}_${elig.regime}`]
-                  if (quality && quality.warnings && quality.warnings.length > 0) {
-                    totalWarnings += quality.warnings.length
-                    regimesWithWarnings++
-                    // Count critical warnings (e.g., missing/expired documents)
-                    const critical = quality.warnings.filter((w: string) =>
-                      w.toLowerCase().includes('missing') || w.toLowerCase().includes('expired')
-                    ).length
-                    criticalWarnings += critical
-                  }
-                })
-
-                if (totalWarnings === 0) return null
-
-                return (
-                  <div style={{
-                    marginTop: '16px',
-                    padding: '14px 18px',
-                    backgroundColor: criticalWarnings > 0 ? '#fef2f2' : '#fffbeb',
-                    borderRadius: '8px',
-                    border: `1px solid ${criticalWarnings > 0 ? '#fca5a5' : '#fbbf24'}`,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <AlertTriangle size={20} color={criticalWarnings > 0 ? '#dc2626' : '#f59e0b'} />
-                      <div>
-                        <div style={{ fontSize: '13px', fontWeight: '600', color: criticalWarnings > 0 ? '#991b1b' : '#92400e' }}>
-                          {criticalWarnings > 0 ? `${criticalWarnings} Critical Warning${criticalWarnings !== 1 ? 's' : ''}` : 'Data Quality Alerts'}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
-                          {totalWarnings} total warning{totalWarnings !== 1 ? 's' : ''} across {regimesWithWarnings} regime{regimesWithWarnings !== 1 ? 's' : ''}
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setActiveTab('regulatory')}
-                      style={{
-                        padding: '8px 16px',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        backgroundColor: 'white',
-                        color: criticalWarnings > 0 ? '#dc2626' : '#f59e0b',
-                        border: `1px solid ${criticalWarnings > 0 ? '#fca5a5' : '#fbbf24'}`,
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = criticalWarnings > 0 ? '#fee2e2' : '#fef3c7'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'white'
-                      }}
-                    >
-                      View Details →
-                    </button>
-                  </div>
-                )
-              })()}
-
-              {/* Client Attributes Section */}
-              {client?.client_attributes && (
-                <div style={{ marginTop: '24px', padding: '20px', backgroundColor: '#f0f9ff', borderRadius: '12px', border: '2px solid #0ea5e9' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                    <span style={{ fontSize: '24px' }}>🏢</span>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: 0 }}>
-                      Client Attributes
-                    </h3>
-                    <span style={{
-                      fontSize: '11px',
-                      fontWeight: '600',
-                      padding: '4px 10px',
-                      backgroundColor: '#bae6fd',
-                      color: '#075985',
-                      borderRadius: '12px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>
-                      Used for Rule Evaluation
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
-                    {/* Left Column: Basic Attributes */}
-                    <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #7dd3fc' }}>
-                      <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#0c4a6e', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>📊</span>
-                        Basic Attributes
-                      </h4>
-
-                      {client.client_attributes.account_type && (
-                        <div style={{ marginBottom: '10px' }}>
-                          <div style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
-                            Account Type
-                          </div>
-                          <div style={{ fontSize: '13px', fontWeight: '500', color: '#111827', padding: '6px 10px', backgroundColor: '#e0f2fe', borderRadius: '6px', border: '1px solid #7dd3fc' }}>
-                            {client.client_attributes.account_type}
-                          </div>
-                        </div>
-                      )}
-
-                      {client.client_attributes.booking_location && (
-                        <div style={{ marginBottom: '10px' }}>
-                          <div style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
-                            Booking Location
-                          </div>
-                          <div style={{ fontSize: '13px', fontWeight: '500', color: '#111827', padding: '6px 10px', backgroundColor: '#e0f2fe', borderRadius: '6px', border: '1px solid #7dd3fc' }}>
-                            {client.client_attributes.booking_location}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Right Column: Product Grid */}
-                    {client.client_attributes.product_grid && (
-                      <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #7dd3fc' }}>
-                        <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#0c4a6e', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span>🎯</span>
-                          Product Grid
-                        </h4>
-
-                        {client.client_attributes.product_grid.product_group && (
-                          <div style={{ marginBottom: '8px' }}>
-                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280' }}>Group:</span>{' '}
-                            <span style={{ fontSize: '12px', color: '#111827' }}>{client.client_attributes.product_grid.product_group}</span>
-                          </div>
-                        )}
-
-                        {client.client_attributes.product_grid.product_category && (
-                          <div style={{ marginBottom: '8px' }}>
-                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280' }}>Category:</span>{' '}
-                            <span style={{ fontSize: '12px', color: '#111827' }}>{client.client_attributes.product_grid.product_category}</span>
-                          </div>
-                        )}
-
-                        {client.client_attributes.product_grid.product_type && (
-                          <div style={{ marginBottom: '8px' }}>
-                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280' }}>Type:</span>{' '}
-                            <span style={{ fontSize: '12px', color: '#111827' }}>{client.client_attributes.product_grid.product_type}</span>
-                          </div>
-                        )}
-
-                        {client.client_attributes.product_grid.product_status && (
-                          <div style={{ marginBottom: '8px' }}>
-                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280' }}>Status:</span>{' '}
-                            <span style={{
-                              fontSize: '11px',
-                              fontWeight: '600',
-                              padding: '2px 8px',
-                              borderRadius: '4px',
-                              backgroundColor: client.client_attributes.product_grid.product_status === 'approved' ? '#d1fae5' : '#fee2e2',
-                              color: client.client_attributes.product_grid.product_status === 'approved' ? '#065f46' : '#991b1b'
-                            }}>
-                              {client.client_attributes.product_grid.product_status}
-                            </span>
-                          </div>
-                        )}
-
-                        {client.client_attributes.product_grid.bank_entity && (
-                          <div>
-                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280' }}>Bank Entity:</span>{' '}
-                            <span style={{ fontSize: '12px', color: '#111827' }}>{client.client_attributes.product_grid.bank_entity}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ marginTop: '12px', padding: '10px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #7dd3fc' }}>
-                    <p style={{ fontSize: '11px', color: '#0c4a6e', margin: 0, fontStyle: 'italic' }}>
-                      💡 <strong>Note:</strong> These attributes are evaluated against classification rules to determine regime eligibility.
-                      View detailed rule evaluation in the "Regime Qualification" tab.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <OverviewTab
+            client={client}
+            stages={stages}
+            classifications={classifications}
+            eligibilities={eligibilities}
+            regimes={regimes}
+            clientId={clientId}
+            dataQuality={dataQuality}
+            loading={loading}
+            onSimulateCXApproval={handleSimulateCXApproval}
+            onViewRegulatory={() => setActiveTab('regulatory')}
+            onRefreshStages={() => {
+              if (!clientId) return
+              Promise.all([
+                onboardingApi.getStages(Number(clientId)),
+                fetch(
+                  `http://localhost:8000/api/clients/${clientId}/regime-eligibility`,
+                ).then((r) => r.json()),
+              ]).then(([stagesData, eligData]) => {
+                setStages(stagesData)
+                setEligibilities(eligData)
+              })
+            }}
+          />
         )}
 
-        {/* Regulatory Due Diligence Tab */}
         {activeTab === 'regulatory' && (
-          <div>
-            <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '28px', border: '1px solid #e5e7eb' }}>
-              <div style={{ marginBottom: '24px' }}>
-                <h2 style={{ fontSize: '22px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
-                  Regulatory Due Diligence
-                </h2>
-                <p style={{ fontSize: '14px', color: '#6b7280' }}>
-                  Evaluate regime eligibility and monitor mandatory evidence completeness
-                </p>
-              </div>
-
-              {/* External Rule Engine Integration Banner */}
-              <div style={{
-                marginBottom: '28px',
-                padding: '16px 20px',
-                backgroundColor: '#f0f9ff',
-                borderRadius: '10px',
-                border: '2px solid #0ea5e9',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}>
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  backgroundColor: '#0ea5e9',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '20px'
-                }}>
-                  🔗
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#075985', marginBottom: '4px' }}>
-                    External Rule Engine Integration
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#0c4a6e', lineHeight: '1.5' }}>
-                    Classification rules are executed in <strong>Droit Platform</strong> and results are synchronized to this system.
-                    Changes in client attributes or rules trigger automatic re-evaluation.
-                  </div>
-                </div>
-              </div>
-
-              {/* Classification History (Legacy Classifications) - Collapsed Accordion */}
-              {classifications.length > 0 && (
-                <div style={{ marginBottom: '32px' }}>
-                  <button
-                    onClick={() => setIsLegacyExpanded(!isLegacyExpanded)}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '16px 20px',
-                      backgroundColor: '#f9fafb',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '10px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f3f4f6'
-                      e.currentTarget.style.borderColor = '#d1d5db'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f9fafb'
-                      e.currentTarget.style.borderColor = '#e5e7eb'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span style={{ fontSize: '20px' }}>📚</span>
-                      <div style={{ textAlign: 'left' }}>
-                        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#374151', margin: 0, marginBottom: '4px' }}>
-                          Classification History
-                        </h3>
-                        <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>
-                          {classifications.length} historical manual classification{classifications.length !== 1 ? 's' : ''} (pre-automation)
-                        </p>
-                      </div>
-                      <span style={{
-                        fontSize: '10px',
-                        fontWeight: '600',
-                        padding: '3px 8px',
-                        backgroundColor: '#e5e7eb',
-                        color: '#6b7280',
-                        borderRadius: '8px',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                        marginLeft: '8px'
-                      }}>
-                        Audit Only
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '18px', color: '#6b7280', transition: 'transform 0.2s', transform: isLegacyExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                      ▼
-                    </span>
-                  </button>
-
-                  {isLegacyExpanded && (
-                    <div style={{ marginTop: '16px', padding: '20px', backgroundColor: '#fafafa', borderRadius: '10px', border: '1px solid #e5e7eb' }}>
-                      <div style={{
-                        padding: '12px 16px',
-                        backgroundColor: '#fffbeb',
-                        borderRadius: '8px',
-                        border: '1px solid #fde047',
-                        marginBottom: '16px',
-                        fontSize: '12px',
-                        color: '#78350f',
-                        lineHeight: '1.6'
-                      }}>
-                        <strong>⚠️ Note:</strong> These are historical classifications assigned before the automated rule engine implementation.
-                        They are maintained for audit purposes only. <strong>Current authoritative assessments are shown in the Rule-Based Assessment section below.</strong>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {classifications.map(classification => (
-                          <div
-                            key={classification.id}
-                            style={{
-                              border: '1px solid #d1d5db',
-                              borderRadius: '8px',
-                              padding: '16px',
-                              backgroundColor: 'white'
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '6px' }}>
-                                  {classification.framework}
-                                </div>
-                                <div style={{ fontSize: '13px', color: '#374151', marginBottom: '6px' }}>
-                                  <span style={{ fontWeight: '600' }}>Classification:</span> {classification.classification}
-                                </div>
-                                <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                                  <span style={{ fontWeight: '600' }}>Classified:</span> {new Date(classification.classification_date).toLocaleDateString()}
-                                </div>
-                                {classification.validation_notes && (
-                                  <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '6px', fontStyle: 'italic' }}>
-                                    "{classification.validation_notes}"
-                                  </div>
-                                )}
-                              </div>
-                              <div style={{
-                                padding: '4px 10px',
-                                backgroundColor: classification.validation_status === 'validated' ? '#d1fae5' :
-                                               classification.validation_status === 'rejected' ? '#fee2e2' : '#fef3c7',
-                                color: classification.validation_status === 'validated' ? '#065f46' :
-                                       classification.validation_status === 'rejected' ? '#991b1b' : '#92400e',
-                                borderRadius: '6px',
-                                fontSize: '11px',
-                                fontWeight: '600',
-                                textTransform: 'capitalize'
-                              }}>
-                                {classification.validation_status}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Rule-Based Assessment Section */}
-              {eligibilities.length === 0 && classifications.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '60px 20px', color: '#6b7280' }}>
-                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>No regime evaluations yet</h3>
-                  <p style={{ fontSize: '14px' }}>Regime eligibility evaluations will appear here once processed</p>
-                </div>
-              ) : eligibilities.length > 0 ? (
-                <div style={{
-                  padding: '24px',
-                  backgroundColor: '#f0fdf4',
-                  borderRadius: '12px',
-                  border: '2px solid #86efac'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                    <span style={{ fontSize: '24px' }}>✅</span>
-                    <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#059669', margin: 0 }}>
-                      Regime Eligibility Results
-                    </h3>
-                    <span style={{
-                      fontSize: '11px',
-                      fontWeight: '600',
-                      padding: '4px 10px',
-                      backgroundColor: '#dcfce7',
-                      color: '#166534',
-                      borderRadius: '12px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      border: '1px solid #86efac'
-                    }}>
-                      {eligibilities.filter(e => e.is_eligible).length} ELIGIBLE
-                    </span>
-                  </div>
-                  <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>
-                    Automated evaluation based on configured classification rules and client attributes.
-                  </p>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    {eligibilities.map(elig => {
-                    const quality = dataQuality[`${clientId}_${elig.regime}`]
-
-                    return (
-                      <div
-                        key={elig.id}
-                        style={{
-                          border: '2px solid',
-                          borderColor: elig.is_eligible ? '#d1fae5' : '#fee2e2',
-                          borderRadius: '12px',
-                          padding: '24px',
-                          backgroundColor: elig.is_eligible ? '#f0fdf4' : '#fef2f2',
-                          minWidth: 0,
-                          overflowX: 'auto'
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '12px' }}>
-                              {elig.regime} Regime
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '12px' }}>
-                              {getEligibilityBadge(elig.is_eligible)}
-                              {quality && getQualityScoreBadge(quality.quality_score)}
-                            </div>
-
-                            <div style={{ fontSize: '14px', color: '#6b7280', marginTop: '12px', lineHeight: '1.6' }}>
-                              {elig.eligibility_reason}
-                            </div>
-
-                            {/* Evaluated Attributes Section */}
-                            {elig.client_attributes && (
-                              <div style={{ marginTop: '16px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '10px', border: '1px solid #e5e7eb' }}>
-                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <span>🔍</span>
-                                  Evaluated Attributes
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-                                  {elig.client_attributes.account_type && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
-                                      <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
-                                      <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Account Type</div>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{elig.client_attributes.account_type}</div>
-                                      </div>
-                                    </div>
-                                  )}
-                                  {elig.client_attributes.booking_location && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
-                                      <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
-                                      <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Booking Location</div>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{elig.client_attributes.booking_location}</div>
-                                      </div>
-                                    </div>
-                                  )}
-                                  {elig.client_attributes.product_grid?.product_group && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
-                                      <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
-                                      <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Product Group</div>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{elig.client_attributes.product_grid.product_group}</div>
-                                      </div>
-                                    </div>
-                                  )}
-                                  {elig.client_attributes.product_grid?.product_category && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
-                                      <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
-                                      <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Product Category</div>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{elig.client_attributes.product_grid.product_category}</div>
-                                      </div>
-                                    </div>
-                                  )}
-                                  {elig.client_attributes.product_grid?.product_type && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
-                                      <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
-                                      <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Product Type</div>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{elig.client_attributes.product_grid.product_type}</div>
-                                      </div>
-                                    </div>
-                                  )}
-                                  {elig.client_attributes.product_grid?.product_status && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
-                                      <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
-                                      <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Product Status</div>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{elig.client_attributes.product_grid.product_status}</div>
-                                      </div>
-                                    </div>
-                                  )}
-                                  {elig.client_attributes.product_grid?.bank_entity && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #d1d5db' }}>
-                                      <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '700' }}>✓</span>
-                                      <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Bank Entity</div>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{elig.client_attributes.product_grid.bank_entity}</div>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Matched and Unmatched Rules */}
-                            <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: elig.unmatched_rules && elig.unmatched_rules.length > 0 ? 'repeat(auto-fit, minmax(300px, 1fr))' : '1fr', gap: '20px' }}>
-                              <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '10px', border: '2px solid #86efac', minWidth: 0 }}>
-                                <div style={{ fontSize: '14px', fontWeight: '600', color: '#065f46', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <span style={{ fontSize: '16px' }}>✅</span>
-                                  Matched Rules ({elig.matched_rules?.length || 0})
-                                </div>
-                                {elig.matched_rules && elig.matched_rules.length > 0 ? (
-                                  <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#374151', lineHeight: '2' }}>
-                                    {elig.matched_rules.map((rule, idx) => (
-                                      <li key={idx} style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
-                                        <strong>{rule.rule_name}</strong>
-                                        <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>Type: {rule.rule_type}</div>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                ) : (
-                                  <div style={{ fontSize: '12px', color: '#6b7280', fontStyle: 'italic' }}>No rules matched</div>
-                                )}
-                              </div>
-
-                              {elig.unmatched_rules && elig.unmatched_rules.length > 0 && (
-                                <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '10px', border: '2px solid #fca5a5', minWidth: 0 }}>
-                                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#991b1b', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span style={{ fontSize: '16px' }}>❌</span>
-                                    Unmatched Rules ({elig.unmatched_rules.length})
-                                  </div>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                    {elig.unmatched_rules.map((rule, idx) => (
-                                      <div key={idx} style={{ padding: '10px', backgroundColor: '#fef2f2', borderRadius: '6px', border: '1px solid #fca5a5' }}>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827', marginBottom: '6px', wordBreak: 'break-word' }}>{rule.rule_name}</div>
-                                        <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '6px' }}>Type: {rule.rule_type}</div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '10px' }}>
-                                          <div style={{ padding: '4px 6px', backgroundColor: '#fef3c7', borderRadius: '4px', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
-                                            <strong style={{ color: '#92400e' }}>Expected:</strong> {JSON.stringify(rule.expected, null, 2)}
-                                          </div>
-                                          <div style={{ padding: '4px 6px', backgroundColor: '#fee2e2', borderRadius: '4px', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
-                                            <strong style={{ color: '#991b1b' }}>Actual:</strong> {JSON.stringify(rule.actual, null, 2)}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Data Quality Warnings */}
-                            {quality && quality.warnings.length > 0 && (
-                              <div style={{
-                                marginTop: '16px',
-                                padding: '16px',
-                                backgroundColor: '#fef3c7',
-                                borderRadius: '8px',
-                                border: '1px solid #fbbf24'
-                              }}>
-                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#92400e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <AlertTriangle size={16} />
-                                  Data Quality Warnings
-                                </div>
-                                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#78350f', lineHeight: '1.8' }}>
-                                  {quality.warnings.slice(0, 3).map((warning, idx) => (
-                                    <li key={idx}>{warning}</li>
-                                  ))}
-                                  {quality.warnings.length > 3 && (
-                                    <li style={{ fontWeight: '600' }}>...and {quality.warnings.length - 3} more</li>
-                                  )}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
-
-                          <button
-                            onClick={() => handleEvaluateRegime(elig.regime)}
-                            disabled={evaluating === elig.regime}
-                            style={{
-                              padding: '10px 16px',
-                              fontSize: '13px',
-                              backgroundColor: evaluating === elig.regime ? '#9ca3af' : '#6b7280',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '8px',
-                              cursor: evaluating === elig.regime ? 'not-allowed' : 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              fontWeight: '600',
-                              transition: 'all 0.2s',
-                              height: 'fit-content'
-                            }}
-                            onMouseEnter={(e) => {
-                              if (evaluating !== elig.regime) {
-                                e.currentTarget.style.backgroundColor = '#374151'
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (evaluating !== elig.regime) {
-                                e.currentTarget.style.backgroundColor = '#6b7280'
-                              }
-                            }}
-                          >
-                            <RefreshCw size={16} style={{ animation: evaluating === elig.regime ? 'spin 1s linear infinite' : 'none' }} />
-                            Re-evaluate
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-                </div>
-              ) : null}
-
-              {/* Client Central Publication Section */}
-              <div style={{ marginTop: '32px', backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '2px solid #e5e7eb' }}>
-                <div style={{ marginBottom: '20px' }}>
-                  <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Send size={20} className="text-blue-600" />
-                    Client Central Integration
-                  </h3>
-                  <p style={{ fontSize: '14px', color: '#6b7280' }}>
-                    Publish classification results to Client Central system for downstream processing
-                  </p>
-                </div>
-
-                {cxSyncStatus && (
-                  <div style={{ marginBottom: '20px' }}>
-                    {cxSyncStatus.cx_sync_status === 'synced' ? (
-                      <div style={{ padding: '16px', backgroundColor: '#d1fae5', borderRadius: '8px', border: '1px solid #10b981' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                          <CheckCircle2 size={20} className="text-green-600" />
-                          <div>
-                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#065f46' }}>
-                              Classification Published to Client Central
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#047857', marginTop: '4px' }}>
-                              Last synced: {new Date(cxSyncStatus.cx_sync_date).toLocaleString()}
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{ fontSize: '13px', color: '#065f46', marginLeft: '32px' }}>
-                          <div>Client Central Reference ID: <span style={{ fontFamily: 'monospace', fontWeight: '600' }}>{cxSyncStatus.cx_reference_id}</span></div>
-                          <div style={{ marginTop: '4px' }}>Regimes Classified: {cxSyncStatus.regimes_classified}</div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ padding: '16px', backgroundColor: '#fef3c7', borderRadius: '8px', border: '1px solid #f59e0b' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <AlertTriangle size={20} className="text-yellow-600" />
-                          <div>
-                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#92400e' }}>
-                              Classification Not Yet Published
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#b45309', marginTop: '4px' }}>
-                              Classification results are available but have not been sent to Client Central system
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {eligibilities.length > 0 && (
-                  <div style={{ marginTop: '16px' }}>
-                    {documentRequirements?.summary && documentRequirements.summary.compliance_percentage < 90 && (
-                      <div style={{ padding: '12px 16px', backgroundColor: '#fef3c7', borderRadius: '8px', border: '1px solid #fbbf24', marginBottom: '16px', fontSize: '13px', color: '#92400e' }}>
-                        <strong>Note:</strong> Classification will be published with document compliance exceptions flagged for review (Compliance: {documentRequirements.summary.compliance_percentage.toFixed(0)}%)
-                      </div>
-                    )}
-
-                    <button
-                      onClick={handlePublishToCX}
-                      disabled={publishingToCX || eligibilities.length === 0}
-                      style={{
-                        padding: '12px 24px',
-                        backgroundColor: publishingToCX ? '#9ca3af' : '#2563eb',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        cursor: publishingToCX || eligibilities.length === 0 ? 'not-allowed' : 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!publishingToCX && eligibilities.length > 0) {
-                          e.currentTarget.style.backgroundColor = '#1d4ed8'
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!publishingToCX) {
-                          e.currentTarget.style.backgroundColor = '#2563eb'
-                        }
-                      }}
-                    >
-                      {publishingToCX ? (
-                        <>
-                          <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                          Publishing to Client Central...
-                        </>
-                      ) : (
-                        <>
-                          <Send size={16} />
-                          {cxSyncStatus?.cx_sync_status === 'synced' ? 'Re-publish to Client Central' : 'Publish Classification to Client Central'}
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-            </div>
-          </div>
+          <RegulatoryTab
+            classifications={classifications}
+            eligibilities={eligibilities}
+            dataQuality={dataQuality}
+            evaluating={evaluating}
+            isLegacyExpanded={isLegacyExpanded}
+            setIsLegacyExpanded={setIsLegacyExpanded}
+            onEvaluate={handleEvaluateRegime}
+            onPublishToCX={handlePublishToCX}
+            cxSyncStatus={cxSyncStatus}
+            publishingToCX={publishingToCX}
+            documentRequirements={documentRequirements}
+            clientIdStr={String(clientId)}
+          />
         )}
 
-        {/* Documents Tab */}
         {activeTab === 'documents' && (
           <div className="space-y-6">
-            {/* Document Validation Summary */}
             {documentRequirements?.summary && (
-              <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '2px solid #e5e7eb' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '16px' }}>
-                  Document Validation Summary
-                </h3>
+              <DocumentValidationSummary summary={documentRequirements.summary} />
+            )}
+            <DocumentRequirementsTab
+              clientId={Number(clientId)}
+              clientName={client.name}
+            />
+          </div>
+        )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-                  <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>Overall Status</div>
-                    <div style={{
-                      fontSize: '18px',
-                      fontWeight: '600',
-                      color: documentRequirements.summary.compliance_percentage >= 80 ? '#10b981' :
-                             documentRequirements.summary.compliance_percentage >= 50 ? '#f59e0b' : '#ef4444',
-                      textTransform: 'capitalize'
-                    }}>
-                      {documentRequirements.summary.compliance_percentage >= 80 ? 'Excellent' :
-                       documentRequirements.summary.compliance_percentage >= 50 ? 'Good' : 'Needs Attention'}
-                    </div>
-                  </div>
+        {activeTab === 'tasks' && (
+          <Card className="py-16">
+            <div className="flex flex-col items-center justify-center gap-2 text-center">
+              <ClipboardList className="h-8 w-8 text-muted-foreground" />
+              <div className="text-base font-medium text-foreground">
+                Tasks &amp; activities
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Task tracking and activity log will be available here.
+              </p>
+            </div>
+          </Card>
+        )}
+      </div>
+    </div>
+  )
+}
 
-                  <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>Total Requirements</div>
-                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#111827' }}>
-                      {documentRequirements.summary.total_requirements}
-                    </div>
-                  </div>
+// -------------------------------------------------------------
+// Client header
+// -------------------------------------------------------------
 
-                  <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>Compliant</div>
-                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#10b981' }}>
-                      {documentRequirements.summary.compliant_count}
-                    </div>
-                  </div>
+function ClientHeader({
+  client,
+  riskScore,
+}: {
+  client: Client
+  riskScore: RiskScore | null
+}) {
+  return (
+    <header className="pb-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          {client.name}
+        </h1>
+        <StatusBadge status={client.onboarding_status} type="onboarding" />
+        {riskScore && <RiskBadge riskScore={riskScore} size="small" />}
+      </div>
 
-                  <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>Missing</div>
-                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#ef4444' }}>
-                      {documentRequirements.summary.missing_count}
-                    </div>
-                  </div>
+      {riskScore && riskScore.risk_factors.length > 0 && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Risk factors:</span>{' '}
+          {riskScore.risk_factors.join(', ')}
+        </p>
+      )}
 
-                  <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>Expired</div>
-                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#f59e0b' }}>
-                      {documentRequirements.summary.expired_count}
-                    </div>
-                  </div>
+      <dl className="mt-3 flex flex-wrap gap-x-8 gap-y-1 text-xs">
+        <div>
+          <dt className="inline font-medium text-foreground">Entity ID: </dt>
+          <dd className="inline font-mono text-muted-foreground">
+            {client.legal_entity_id}
+          </dd>
+        </div>
+        <div>
+          <dt className="inline font-medium text-foreground">Country: </dt>
+          <dd className="inline text-muted-foreground">
+            {client.country_of_incorporation}
+          </dd>
+        </div>
+        <div>
+          <dt className="inline font-medium text-foreground">Entity Type: </dt>
+          <dd className="inline text-muted-foreground">{client.entity_type}</dd>
+        </div>
+        <div>
+          <dt className="inline font-medium text-foreground">RM: </dt>
+          <dd className="inline text-muted-foreground">{client.assigned_rm}</dd>
+        </div>
+      </dl>
 
-                  <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>Compliance</div>
-                    <div style={{
-                      fontSize: '24px',
-                      fontWeight: '700',
-                      color: documentRequirements.summary.compliance_percentage >= 80 ? '#10b981' :
-                             documentRequirements.summary.compliance_percentage >= 50 ? '#f59e0b' : '#ef4444'
-                    }}>
-                      {documentRequirements.summary.compliance_percentage.toFixed(0)}%
-                    </div>
-                  </div>
+      <div className="mt-4 grid grid-cols-1 divide-y divide-border overflow-hidden rounded-md border border-border bg-muted/30 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        <KeyAttr label="Product" value={client.client_attributes?.product} />
+        <KeyAttr
+          label="Booking Location"
+          value={client.client_attributes?.booking_location}
+        />
+        <KeyAttr label="Country of Incorporation" value={client.country_of_incorporation} />
+      </div>
+    </header>
+  )
+}
 
-                  <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>Can Publish to CX</div>
-                    <div style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#10b981',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      marginTop: '4px'
-                    }}>
-                      <CheckCircle2 size={20} />
-                      Yes
-                    </div>
-                  </div>
+function KeyAttr({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div className="px-4 py-3">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-1 text-sm font-medium text-foreground">
+        {value || 'Not specified'}
+      </div>
+    </div>
+  )
+}
+
+// -------------------------------------------------------------
+// Overview tab
+// -------------------------------------------------------------
+
+interface OverviewTabProps {
+  client: Client
+  stages: OnboardingStage[]
+  classifications: RegulatoryClassification[]
+  eligibilities: RegimeEligibility[]
+  regimes: string[]
+  clientId: string | undefined
+  dataQuality: Record<string, DataQualityResult>
+  loading: boolean
+  onSimulateCXApproval: () => void
+  onViewRegulatory: () => void
+  onRefreshStages: () => void
+}
+
+function OverviewTab({
+  client,
+  stages,
+  classifications,
+  eligibilities,
+  regimes,
+  clientId,
+  dataQuality,
+  loading,
+  onSimulateCXApproval,
+  onViewRegulatory,
+  onRefreshStages,
+}: OverviewTabProps) {
+  const attrs = client.client_attributes ?? {}
+  const hasMaterialChange = Boolean(attrs.country_change_date)
+  const showCXApprovalPrompt =
+    client.onboarding_status === 'in_progress' &&
+    stages.some(
+      (s) => s.stage_name === 'Legal Entity Setup' && s.status === 'in_progress',
+    )
+
+  // Data quality summary
+  let totalWarnings = 0
+  let criticalWarnings = 0
+  let regimesWithWarnings = 0
+  eligibilities.forEach((elig) => {
+    const q = dataQuality[`${clientId}_${elig.regime}`]
+    if (q && q.warnings && q.warnings.length > 0) {
+      totalWarnings += q.warnings.length
+      regimesWithWarnings++
+      criticalWarnings += q.warnings.filter((w) =>
+        /missing|expired/i.test(w),
+      ).length
+    }
+  })
+
+  return (
+    <div className="space-y-6">
+      {/* Onboarding progress */}
+      <Card className="p-6">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-base font-semibold text-foreground">
+              Onboarding progress
+            </h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Stage-by-stage view of the client onboarding pipeline.
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            {client.cumulative_tat_days != null && (
+              <div className="text-right">
+                <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Cumulative TAT
                 </div>
-
-                {/* Issues Found */}
-                {(documentRequirements.summary.missing_count > 0 || documentRequirements.summary.expired_count > 0) && (
-                  <div style={{ padding: '12px 16px', backgroundColor: '#fef3c7', borderRadius: '8px', border: '1px solid #fbbf24' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#92400e', marginBottom: '8px' }}>Issues Found:</div>
-                    {documentRequirements.summary.missing_count > 0 && (
-                      <div style={{ fontSize: '12px', color: '#92400e', marginLeft: '12px' }}>
-                        • {documentRequirements.summary.missing_count} missing document{documentRequirements.summary.missing_count > 1 ? 's' : ''} require{documentRequirements.summary.missing_count === 1 ? 's' : ''} attention
-                      </div>
-                    )}
-                    {documentRequirements.summary.expired_count > 0 && (
-                      <div style={{ fontSize: '12px', color: '#92400e', marginLeft: '12px' }}>
-                        • {documentRequirements.summary.expired_count} expired document{documentRequirements.summary.expired_count > 1 ? 's need' : ' needs'} renewal
-                      </div>
-                    )}
+                <div className="text-lg font-semibold text-success">
+                  {client.cumulative_tat_days}d
+                </div>
+                {client.cumulative_tat_hours != null && (
+                  <div className="text-[10px] text-muted-foreground">
+                    {client.cumulative_tat_hours.toFixed(1)}h
                   </div>
                 )}
               </div>
             )}
+            <SimulateExternalTriggerButton
+              stages={stages}
+              clientId={Number(clientId)}
+              onTriggerComplete={onRefreshStages}
+            />
+          </div>
+        </div>
 
-            {/* Document Requirements Tab */}
-            <DocumentRequirementsTab clientId={Number(clientId)} clientName={client.name} />
+        <div className="relative">
+          <div className="absolute left-4 right-4 top-[18px] h-px bg-border" />
+          <div className="relative z-10 grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-6">
+            {STAGES.map((name) => (
+              <StageCell
+                key={name}
+                name={name}
+                stage={stages.find((s) => s.stage_name === name)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {hasMaterialChange && (
+          <Alert variant="warning" className="mt-6">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Material change detected</AlertTitle>
+            <AlertDescription className="mt-2 space-y-1 text-xs">
+              <div>
+                <span className="font-medium">Country of incorporation changed:</span>{' '}
+                {attrs.previous_country_of_incorporation} → {client.country_of_incorporation}
+              </div>
+              <div>
+                <span className="font-medium">Change date:</span>{' '}
+                {new Date(attrs.country_change_date).toLocaleDateString()}
+              </div>
+              <div>
+                <span className="font-medium">Reason:</span>{' '}
+                {attrs.change_reason || 'Not specified'}
+              </div>
+              <div>
+                <span className="font-medium">Impact:</span> Periodic review triggered —
+                classification needs re-evaluation for new jurisdiction-specific regimes.
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {showCXApprovalPrompt && (
+          <Alert variant="info" className="mt-6">
+            <Send className="h-4 w-4" />
+            <AlertTitle>Client Central product approval required</AlertTitle>
+            <AlertDescription className="mt-2 text-xs">
+              Simulate product approval from Client Central to trigger regulatory
+              classification across {regimes.length}+ regimes.
+              <div className="mt-3">
+                <Button size="sm" onClick={onSimulateCXApproval} disabled={loading}>
+                  {loading ? 'Processing…' : 'Simulate Client Central approval'}
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+      </Card>
+
+      {/* Regulatory overview — two lanes */}
+      <Card className="p-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div>
+            <div className="mb-3 flex items-center gap-2">
+              <Scale className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold text-foreground">
+                Regulatory classifications
+              </h2>
+            </div>
+
+            {classifications.length === 0 ? (
+              <div className="rounded-md border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                <div>No manual classifications</div>
+                {eligibilities.length > 0 && (
+                  <div className="mt-2 text-xs text-success">
+                    {eligibilities.filter((e) => e.is_eligible).length} regime
+                    {eligibilities.filter((e) => e.is_eligible).length !== 1 ? 's' : ''}{' '}
+                    evaluated via rule engine (see below)
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {classifications.map((c) => (
+                  <RegulatoryClassificationCard key={c.id} classification={c} />
+                ))}
+              </div>
+            )}
+
+            {eligibilities.length > 0 && (
+              <div className="mt-4 rounded-md border border-border bg-muted/30 p-3 text-xs">
+                <div className="mb-2 flex items-center gap-1.5 font-medium text-foreground">
+                  <Target className="h-3.5 w-3.5 text-primary" />
+                  Regime assessment summary
+                </div>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>
+                    <span className="font-medium text-foreground">Evaluated:</span>{' '}
+                    {eligibilities.length} of {regimes.length} regulatory regimes
+                  </li>
+                  <li>
+                    <span className="font-medium text-foreground">Eligible:</span>{' '}
+                    {eligibilities.filter((e) => e.is_eligible).length} regime
+                    {eligibilities.filter((e) => e.is_eligible).length !== 1 ? 's' : ''}
+                  </li>
+                  <li>
+                    <span className="font-medium text-foreground">Legacy:</span>{' '}
+                    {classifications.length} framework
+                    {classifications.length !== 1 ? 's' : ''}
+                  </li>
+                </ul>
+                <p className="mt-2 border-t border-border pt-2 text-[11px] italic text-muted-foreground">
+                  All {regimes.length} regimes are assessed. Only applicable regimes
+                  result in classifications.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <div className="mb-3 flex items-center gap-2">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold text-foreground">
+                Documentation requirements
+              </h2>
+            </div>
+            <DocumentRequirementsLane clientId={clientId} />
+          </div>
+        </div>
+
+        {totalWarnings > 0 && (
+          <Alert
+            variant={criticalWarnings > 0 ? 'destructive' : 'warning'}
+            className="mt-6 flex items-center justify-between"
+          >
+            <AlertTriangle className="h-4 w-4" />
+            <div className="flex-1 pl-7">
+              <AlertTitle>
+                {criticalWarnings > 0
+                  ? `${criticalWarnings} critical warning${criticalWarnings !== 1 ? 's' : ''}`
+                  : 'Data quality alerts'}
+              </AlertTitle>
+              <AlertDescription className="text-xs">
+                {totalWarnings} total warning{totalWarnings !== 1 ? 's' : ''} across{' '}
+                {regimesWithWarnings} regime{regimesWithWarnings !== 1 ? 's' : ''}
+              </AlertDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={onViewRegulatory}>
+              View details
+            </Button>
+          </Alert>
+        )}
+
+        {client.client_attributes && (
+          <ClientAttributesSection attrs={client.client_attributes} />
+        )}
+      </Card>
+    </div>
+  )
+}
+
+function ClientAttributesSection({ attrs }: { attrs: Client['client_attributes'] }) {
+  const a = attrs ?? {}
+  const grid = a.product_grid
+  return (
+    <div className="mt-6 rounded-md border border-border bg-muted/30 p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <Network className="h-4 w-4 text-muted-foreground" />
+        <h3 className="text-sm font-semibold text-foreground">Client attributes</h3>
+        <Badge variant="subtle-default" className="ml-1">
+          Used for rule evaluation
+        </Badge>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="rounded-md border border-border bg-card p-3">
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Basic attributes
+          </div>
+          <div className="space-y-2">
+            {a.account_type && (
+              <AttrRow label="Account type" value={a.account_type} />
+            )}
+            {a.booking_location && (
+              <AttrRow label="Booking location" value={a.booking_location} />
+            )}
+            {!a.account_type && !a.booking_location && (
+              <div className="text-xs italic text-muted-foreground">None set</div>
+            )}
+          </div>
+        </div>
+
+        {grid && (
+          <div className="rounded-md border border-border bg-card p-3">
+            <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Product grid
+            </div>
+            <div className="space-y-2">
+              {grid.product_group && <AttrRow label="Group" value={grid.product_group} />}
+              {grid.product_category && (
+                <AttrRow label="Category" value={grid.product_category} />
+              )}
+              {grid.product_type && <AttrRow label="Type" value={grid.product_type} />}
+              {grid.product_status && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Status</span>
+                  <Badge
+                    variant={
+                      grid.product_status === 'approved'
+                        ? 'subtle-success'
+                        : 'subtle-destructive'
+                    }
+                  >
+                    {formatStatusLabel(grid.product_status)}
+                  </Badge>
+                </div>
+              )}
+              {grid.bank_entity && <AttrRow label="Bank entity" value={grid.bank_entity} />}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function AttrRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2 text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-foreground">
+        {value}
+      </span>
+    </div>
+  )
+}
+
+// -------------------------------------------------------------
+// Regulatory tab
+// -------------------------------------------------------------
+
+interface RegulatoryTabProps {
+  classifications: RegulatoryClassification[]
+  eligibilities: RegimeEligibility[]
+  dataQuality: Record<string, DataQualityResult>
+  evaluating: string | null
+  isLegacyExpanded: boolean
+  setIsLegacyExpanded: (v: boolean) => void
+  onEvaluate: (regime: string) => void
+  onPublishToCX: () => void
+  cxSyncStatus: any
+  publishingToCX: boolean
+  documentRequirements: any
+  clientIdStr: string
+}
+
+function RegulatoryTab({
+  classifications,
+  eligibilities,
+  dataQuality,
+  evaluating,
+  isLegacyExpanded,
+  setIsLegacyExpanded,
+  onEvaluate,
+  onPublishToCX,
+  cxSyncStatus,
+  publishingToCX,
+  documentRequirements,
+  clientIdStr,
+}: RegulatoryTabProps) {
+  return (
+    <div className="space-y-6">
+      <Card className="p-6">
+        <div className="mb-6">
+          <h2 className="text-base font-semibold text-foreground">
+            Regulatory due diligence
+          </h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Evaluate regime eligibility and monitor mandatory evidence completeness.
+          </p>
+        </div>
+
+        <Alert variant="info" className="mb-6">
+          <Network className="h-4 w-4" />
+          <AlertTitle>External rule engine integration</AlertTitle>
+          <AlertDescription className="text-xs">
+            Classification rules are executed in <strong>Droit Platform</strong> and
+            results are synchronized to this system. Changes in client attributes or
+            rules trigger automatic re-evaluation.
+          </AlertDescription>
+        </Alert>
+
+        {classifications.length > 0 && (
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={() => setIsLegacyExpanded(!isLegacyExpanded)}
+              className="flex w-full items-center justify-between rounded-md border border-border bg-muted/40 px-4 py-3 text-left transition-colors hover:bg-muted/60"
+            >
+              <div className="flex items-center gap-3">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <div className="text-sm font-medium text-foreground">
+                    Classification history
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {classifications.length} historical classification
+                    {classifications.length !== 1 ? 's' : ''} (pre-automation)
+                  </div>
+                </div>
+                <Badge variant="subtle-default">Audit only</Badge>
+              </div>
+              <ChevronDown
+                className={cn(
+                  'h-4 w-4 text-muted-foreground transition-transform',
+                  isLegacyExpanded && 'rotate-180',
+                )}
+              />
+            </button>
+
+            {isLegacyExpanded && (
+              <div className="mt-3 space-y-3 rounded-md border border-border bg-muted/20 p-4">
+                <Alert variant="warning">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    These are historical classifications assigned before the automated
+                    rule engine. Maintained for audit only. Current authoritative
+                    assessments are below.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="space-y-3">
+                  {classifications.map((c) => (
+                    <div
+                      key={c.id}
+                      className="rounded-md border border-border bg-card p-4"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold text-foreground">
+                            {c.framework}
+                          </div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            <span className="font-medium text-foreground">
+                              Classification:
+                            </span>{' '}
+                            {c.classification}
+                          </div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            <span className="font-medium text-foreground">
+                              Classified:
+                            </span>{' '}
+                            {new Date(c.classification_date).toLocaleDateString()}
+                          </div>
+                          {c.validation_notes && (
+                            <p className="mt-2 text-xs italic text-muted-foreground">
+                              “{c.validation_notes}”
+                            </p>
+                          )}
+                        </div>
+                        <StatusBadge
+                          status={c.validation_status}
+                          type="validation"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Tasks Tab */}
-        {activeTab === 'tasks' && (
-          <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '60px 28px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-            <div style={{ fontSize: '64px', marginBottom: '20px' }}>✓</div>
-            <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#374151', marginBottom: '12px' }}>Tasks & Activities</h3>
-            <p style={{ fontSize: '14px', color: '#6b7280' }}>
-              Task tracking and activity log will be available here
+        {eligibilities.length === 0 && classifications.length === 0 ? (
+          <div className="rounded-md border border-dashed border-border p-12 text-center">
+            <FileCheck className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+            <h3 className="text-sm font-semibold text-foreground">
+              No regime evaluations yet
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Regime eligibility evaluations will appear here once processed.
             </p>
+          </div>
+        ) : eligibilities.length > 0 ? (
+          <div>
+            <div className="mb-4 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-foreground">
+                Regime eligibility results
+              </h3>
+              <Badge variant="subtle-success">
+                {eligibilities.filter((e) => e.is_eligible).length} eligible
+              </Badge>
+            </div>
+            <p className="mb-4 text-xs text-muted-foreground">
+              Automated evaluation based on configured classification rules and client
+              attributes.
+            </p>
+
+            <div className="space-y-4">
+              {eligibilities.map((elig) => (
+                <RegimeCard
+                  key={elig.id}
+                  elig={elig}
+                  quality={dataQuality[`${clientIdStr}_${elig.regime}`]}
+                  evaluating={evaluating === elig.regime}
+                  onEvaluate={() => onEvaluate(elig.regime)}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </Card>
+
+      {/* Client Central publication */}
+      <Card className="p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <Send className="h-4 w-4 text-primary" />
+          <h3 className="text-base font-semibold text-foreground">
+            Client Central integration
+          </h3>
+        </div>
+        <p className="mb-4 text-xs text-muted-foreground">
+          Publish classification results to Client Central for downstream processing.
+        </p>
+
+        {cxSyncStatus && (
+          <div className="mb-4">
+            {cxSyncStatus.cx_sync_status === 'synced' ? (
+              <Alert variant="success">
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertTitle>Classification published to Client Central</AlertTitle>
+                <AlertDescription className="mt-1 space-y-0.5 text-xs">
+                  <div>
+                    Last synced:{' '}
+                    {new Date(cxSyncStatus.cx_sync_date).toLocaleString()}
+                  </div>
+                  <div>
+                    Reference ID:{' '}
+                    <span className="font-mono font-medium">
+                      {cxSyncStatus.cx_reference_id}
+                    </span>
+                  </div>
+                  <div>Regimes classified: {cxSyncStatus.regimes_classified}</div>
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert variant="warning">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Classification not yet published</AlertTitle>
+                <AlertDescription className="text-xs">
+                  Classification results are available but have not been sent to Client
+                  Central.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        )}
+
+        {eligibilities.length > 0 && (
+          <div className="space-y-3">
+            {documentRequirements?.summary &&
+              documentRequirements.summary.compliance_percentage < 90 && (
+                <Alert variant="warning">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    Classification will be published with document compliance
+                    exceptions flagged for review (compliance:{' '}
+                    {documentRequirements.summary.compliance_percentage.toFixed(0)}%).
+                  </AlertDescription>
+                </Alert>
+              )}
+
+            <Button onClick={onPublishToCX} disabled={publishingToCX}>
+              {publishingToCX ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Publishing to Client Central…
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  {cxSyncStatus?.cx_sync_status === 'synced'
+                    ? 'Re-publish to Client Central'
+                    : 'Publish to Client Central'}
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+      </Card>
+    </div>
+  )
+}
+
+function RegimeCard({
+  elig,
+  quality,
+  evaluating,
+  onEvaluate,
+}: {
+  elig: RegimeEligibility
+  quality: DataQualityResult | undefined
+  evaluating: boolean
+  onEvaluate: () => void
+}) {
+  const attrs = elig.client_attributes ?? {}
+  const grid = attrs.product_grid ?? {}
+
+  const attrRows: Array<{ label: string; value: string | undefined }> = [
+    { label: 'Account type', value: attrs.account_type },
+    { label: 'Booking location', value: attrs.booking_location },
+    { label: 'Product group', value: grid.product_group },
+    { label: 'Product category', value: grid.product_category },
+    { label: 'Product type', value: grid.product_type },
+    { label: 'Product status', value: grid.product_status },
+    { label: 'Bank entity', value: grid.bank_entity },
+  ].filter((r) => r.value)
+
+  const qualityVariant: BadgeProps['variant'] = quality
+    ? quality.quality_score >= 80
+      ? 'subtle-success'
+      : quality.quality_score >= 50
+        ? 'subtle-warning'
+        : 'subtle-destructive'
+    : 'subtle-default'
+
+  return (
+    <div
+      className={cn(
+        'rounded-lg border p-5',
+        elig.is_eligible
+          ? 'border-success/40 bg-success/5'
+          : 'border-border bg-muted/30',
+      )}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h4 className="text-sm font-semibold text-foreground">
+              {elig.regime} regime
+            </h4>
+            <Badge
+              variant={elig.is_eligible ? 'subtle-success' : 'subtle-destructive'}
+            >
+              {elig.is_eligible ? (
+                <>
+                  <CheckCircle2 className="mr-1 h-3 w-3" />
+                  Eligible
+                </>
+              ) : (
+                <>
+                  <XCircle className="mr-1 h-3 w-3" />
+                  Not eligible
+                </>
+              )}
+            </Badge>
+            {quality && (
+              <Badge variant={qualityVariant}>
+                {quality.quality_score.toFixed(0)}% complete
+              </Badge>
+            )}
+          </div>
+
+          {elig.eligibility_reason && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {elig.eligibility_reason}
+            </p>
+          )}
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onEvaluate}
+          disabled={evaluating}
+        >
+          <RefreshCw className={cn('h-4 w-4', evaluating && 'animate-spin')} />
+          Re-evaluate
+        </Button>
+      </div>
+
+      {attrRows.length > 0 && (
+        <div className="mt-4 rounded-md border border-border bg-card p-3">
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Evaluated attributes
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {attrRows.map((r) => (
+              <div key={r.label} className="text-xs">
+                <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  {r.label}
+                </div>
+                <div className="truncate font-medium text-foreground">
+                  {r.value}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div
+        className={cn(
+          'mt-4 grid grid-cols-1 gap-3',
+          elig.unmatched_rules && elig.unmatched_rules.length > 0 && 'lg:grid-cols-2',
+        )}
+      >
+        <div className="rounded-md border border-success/40 bg-card p-3">
+          <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-success">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Matched rules ({elig.matched_rules?.length ?? 0})
+          </div>
+          {elig.matched_rules && elig.matched_rules.length > 0 ? (
+            <ul className="space-y-1.5 text-xs text-foreground">
+              {elig.matched_rules.map((rule, idx) => (
+                <li key={idx}>
+                  <div className="font-medium">{rule.rule_name}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    Type: {rule.rule_type}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-xs italic text-muted-foreground">
+              No rules matched
+            </div>
+          )}
+        </div>
+
+        {elig.unmatched_rules && elig.unmatched_rules.length > 0 && (
+          <div className="rounded-md border border-destructive/40 bg-card p-3">
+            <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-destructive">
+              <XCircle className="h-3.5 w-3.5" />
+              Unmatched rules ({elig.unmatched_rules.length})
+            </div>
+            <div className="space-y-2">
+              {elig.unmatched_rules.map((rule, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-sm border border-border bg-muted/40 p-2 text-xs"
+                >
+                  <div className="font-medium text-foreground">{rule.rule_name}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    Type: {rule.rule_type}
+                  </div>
+                  <div className="mt-1.5 space-y-1">
+                    <div className="rounded-sm bg-warning/10 px-1.5 py-1 text-[11px]">
+                      <span className="font-semibold text-warning">Expected: </span>
+                      <span className="font-mono text-foreground">
+                        {JSON.stringify(rule.expected)}
+                      </span>
+                    </div>
+                    <div className="rounded-sm bg-destructive/10 px-1.5 py-1 text-[11px]">
+                      <span className="font-semibold text-destructive">Actual: </span>
+                      <span className="font-mono text-foreground">
+                        {JSON.stringify(rule.actual)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
 
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+      {quality && quality.warnings.length > 0 && (
+        <Alert variant="warning" className="mt-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Data quality warnings</AlertTitle>
+          <AlertDescription>
+            <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs">
+              {quality.warnings.slice(0, 3).map((w, idx) => (
+                <li key={idx}>{w}</li>
+              ))}
+              {quality.warnings.length > 3 && (
+                <li className="font-medium">
+                  …and {quality.warnings.length - 3} more
+                </li>
+              )}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
     </div>
+  )
+}
+
+// -------------------------------------------------------------
+// Documents tab — validation summary
+// -------------------------------------------------------------
+
+function DocumentValidationSummary({ summary }: { summary: any }) {
+  const pct: number = summary.compliance_percentage
+  const tone =
+    pct >= 80 ? 'text-success' : pct >= 50 ? 'text-warning' : 'text-destructive'
+  const statusLabel = pct >= 80 ? 'Excellent' : pct >= 50 ? 'Good' : 'Needs attention'
+
+  const tiles: Array<{ label: string; value: ReactNode; className?: string }> = [
+    { label: 'Overall status', value: <span className={cn('text-base', tone)}>{statusLabel}</span> },
+    { label: 'Total requirements', value: summary.total_requirements },
+    { label: 'Compliant', value: summary.compliant_count, className: 'text-success' },
+    { label: 'Missing', value: summary.missing_count, className: 'text-destructive' },
+    { label: 'Expired', value: summary.expired_count, className: 'text-warning' },
+    { label: 'Compliance', value: `${pct.toFixed(0)}%`, className: tone },
+    {
+      label: 'Can publish to CX',
+      value: (
+        <span className="inline-flex items-center gap-1 text-base text-success">
+          <CheckCircle2 className="h-4 w-4" />
+          Yes
+        </span>
+      ),
+    },
+  ]
+
+  return (
+    <Card className="p-6">
+      <h3 className="mb-4 text-base font-semibold text-foreground">
+        Document validation summary
+      </h3>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
+        {tiles.map((t) => (
+          <Fragment key={t.label}>
+            <div className="rounded-md border border-border bg-muted/30 p-3">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {t.label}
+              </div>
+              <div
+                className={cn(
+                  'mt-1 text-xl font-semibold tabular-nums',
+                  t.className,
+                )}
+              >
+                {t.value}
+              </div>
+            </div>
+          </Fragment>
+        ))}
+      </div>
+
+      {(summary.missing_count > 0 || summary.expired_count > 0) && (
+        <Alert variant="warning" className="mt-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Issues found</AlertTitle>
+          <AlertDescription>
+            <ul className="mt-1 list-inside list-disc text-xs">
+              {summary.missing_count > 0 && (
+                <li>
+                  {summary.missing_count} missing document
+                  {summary.missing_count > 1 ? 's' : ''} require
+                  {summary.missing_count === 1 ? 's' : ''} attention
+                </li>
+              )}
+              {summary.expired_count > 0 && (
+                <li>
+                  {summary.expired_count} expired document
+                  {summary.expired_count > 1 ? 's need' : ' needs'} renewal
+                </li>
+              )}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+    </Card>
   )
 }
